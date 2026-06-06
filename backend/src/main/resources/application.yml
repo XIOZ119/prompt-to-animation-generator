@@ -9,5 +9,9 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  jackson:
+    mapper:
+      sort-properties-alphabetically: false
+
 server:
   port: 8080
