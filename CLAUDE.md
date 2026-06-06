@@ -35,6 +35,20 @@ Layered Architecture
 - Cut : CutImage = 1 : N
 - Cut : CutVideo = 1 : N
 
+## Generation Workflow
+
+1. 사용자가 프롬프트를 입력합니다.
+2. Generation을 PENDING 상태로 생성합니다.
+3. OpenAI GPT-5.4 mini를 사용하여 Scene을 생성합니다.
+4. Scene 정보를 기반으로 Cut을 생성합니다.
+5. Kie Nano Banana를 사용하여 Cut 이미지를 생성합니다.
+6. Kie Kling-2.6을 사용하여 Cut 비디오를 생성합니다.
+7. 생성된 Cut 비디오를 병합하여 최종 애니메이션을 생성합니다.
+8. 최종 영상 URL을 저장합니다.
+9. Generation 상태를 COMPLETED로 변경합니다.
+
+생성 과정 중 오류가 발생하면 Generation 상태를 FAILED로 변경합니다.
+
 ## API
 
 - POST /api/generations
@@ -71,8 +85,8 @@ Layered Architecture
 - userPrompt 1~500자
 
 ## Error Handling
-
-Use a global exception handler and return errors in the common response format.
+- 전역 예외 처리(Global Exception Handler)를 적용합니다.
+- 모든 에러 응답은 공통 응답 형식을 사용합니다.
 
 ### Common Error Codes
 
@@ -92,6 +106,17 @@ Use a global exception handler and return errors in the common response format.
 - GENERATION_CREATE_FAILED: 생성 작업 생성에 실패했습니다.
 - GENERATION_STATUS_FETCH_FAILED: 생성 상태 조회에 실패했습니다.
 - GENERATION_RESULT_FETCH_FAILED: 생성 결과 조회에 실패했습니다.
+
+## Implementation Priority
+1. 공통 응답 구조 구현
+2. 공통 예외 처리 구현
+3. 도메인 엔티티 구현
+4. Repository 구현
+5. Service 구현
+6. Controller 구현
+7. Mock 생성 워크플로우 구현
+8. OpenAI 연동 구현
+9. Kie 연동 구현
 
 ## Rules
 
