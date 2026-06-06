@@ -1,4 +1,10 @@
-FROM ubuntu:latest
-LABEL authors="hongsieun"
-
-ENTRYPOINT ["top", "-b"]
+services:
+  postgres:
+    image: postgres:17
+    container_name: promptflow-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: promptflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
