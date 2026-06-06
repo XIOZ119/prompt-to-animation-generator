@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.sieun.prompt2animation.domain.Generation;
 import org.sieun.prompt2animation.domain.GenerationStatus;
+import org.sieun.prompt2animation.domain.GenerationStep;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -19,35 +20,25 @@ public class GenerationStatusResponse {
     private final Integer totalStepCount;
     private final String errorMessage;
 
-    public static GenerationStatusResponse from(Generation generation) {
-        GenerationStatus status = generation.getStatus();
-
-        Integer progress = switch (status) {
-            case PENDING -> 0;
-            case COMPLETED -> 100;
-            default -> null;
-        };
-
-        String currentStep = switch (status) {
-            case COMPLETED -> "COMPLETED";
-            case FAILED, TIMEOUT -> "FAILED";
-            default -> null;
-        };
-
-        String currentStepMessage = switch (status) {
-            case COMPLETED -> "완료";
-            case FAILED, TIMEOUT -> "실패";
-            default -> null;
-        };
+    public static GenerationStatusResponse of(
+            Generation generation,
+            GenerationStep currentStep,
+            String currentStepMessage,
+            int completedStepCount,
+            int totalStepCount
+    ) {
+        Integer progress = totalStepCount > 0
+                ? completedStepCount * 100 / totalStepCount
+                : 0;
 
         return new GenerationStatusResponse(
                 generation.getId(),
-                status,
+                generation.getStatus(),
                 progress,
-                currentStep,
+                currentStep != null ? currentStep.name() : null,
                 currentStepMessage,
-                null,
-                null,
+                completedStepCount,
+                totalStepCount,
                 generation.getErrorMessage()
         );
     }

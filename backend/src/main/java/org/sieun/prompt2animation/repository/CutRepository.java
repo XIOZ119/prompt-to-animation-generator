@@ -9,4 +9,6 @@ import java.util.List;
 public interface CutRepository extends JpaRepository<Cut, Long> {
 
     List<Cut> findBySceneOrderByCutOrderAsc(Scene scene);
+
+    long countByScene(Scene scene);
 }
