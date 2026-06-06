@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.sieun.prompt2animation.dto.request.GenerationRequest;
 import org.sieun.prompt2animation.dto.response.ApiResponse;
 import org.sieun.prompt2animation.dto.response.GenerationResponse;
+import org.sieun.prompt2animation.dto.response.GenerationResultResponse;
 import org.sieun.prompt2animation.dto.response.GenerationStatusResponse;
 import org.sieun.prompt2animation.service.GenerationService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,5 +30,10 @@ public class GenerationController {
     @GetMapping("/{generationId}")
     public ApiResponse<GenerationStatusResponse> getGenerationStatus(@PathVariable Long generationId) {
         return ApiResponse.success("생성 상태 조회 성공", generationService.getGenerationStatus(generationId));
+    }
+
+    @GetMapping("/{generationId}/result")
+    public ApiResponse<GenerationResultResponse> getGenerationResult(@PathVariable Long generationId) {
+        return ApiResponse.success("생성 결과 조회 성공", generationService.getGenerationResult(generationId));
     }
 }
