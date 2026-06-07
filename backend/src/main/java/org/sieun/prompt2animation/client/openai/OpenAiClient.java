@@ -2,6 +2,7 @@ package org.sieun.prompt2animation.client.openai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.sieun.prompt2animation.client.openai.dto.ChatRequest;
 import org.sieun.prompt2animation.client.openai.dto.ChatRequest.Message;
 import org.sieun.prompt2animation.client.openai.dto.ChatRequest.ResponseFormat;
@@ -31,13 +32,12 @@ public class OpenAiClient {
                   "cutOrder": 1,
                   "imagePrompt": "이미지 생성을 위한 상세 영문 프롬프트",
                   "videoPrompt": "비디오 생성을 위한 상세 영문 프롬프트",
-                  "durationSec": 장면의 내용과 전체 영상 길이를 고려하여 적절한 초 단위 정수
+                  "durationSec": 5 또는 10 중 하나만 선택 (Kie API 제약)
                 }
               ]
             }
             Cut은 4개를 생성하세요. imagePrompt와 videoPrompt는 영문으로 작성하세요.
-            각 cut의 durationSec은 장면의 흐름과 전체 영상 길이에 맞게 자유롭게 결정하세요.
-            각 cut의 durationSec 총 합은 30초 내외로 설정하세요.
+            각 cut의 durationSec은 반드시 5 또는 10 중 하나여야 합니다. 총 합이 30초 내외가 되도록 분배하세요.
             """;
 
     private final RestClient openAiRestClient;

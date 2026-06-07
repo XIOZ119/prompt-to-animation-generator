@@ -52,7 +52,8 @@ public class GenerationWorkflowProcessor {
         sceneRepository.save(scene);
 
         for (CutGenerationResult cut : result.cuts()) {
-            cutRepository.save(Cut.create(scene, cut.cutOrder(), cut.imagePrompt(), cut.videoPrompt(), cut.durationSec()));
+            int validDuration = cut.durationSec() <= 7 ? 5 : 10;
+            cutRepository.save(Cut.create(scene, cut.cutOrder(), cut.imagePrompt(), cut.videoPrompt(), validDuration));
         }
     }
 
