@@ -36,6 +36,7 @@ public class OpenAiClient {
             }
             Cut은 4개를 생성하세요. imagePrompt와 videoPrompt는 영문으로 작성하세요.
             각 cut의 durationSec은 장면의 흐름과 전체 영상 길이에 맞게 자유롭게 결정하세요.
+            각 cut의 durationSec 총 합은 30초 내외로 설정하세요.
             """;
 
     private final RestClient openAiRestClient;
