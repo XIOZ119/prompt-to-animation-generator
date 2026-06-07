@@ -38,6 +38,19 @@ public class GenerationWorkflowService {
         }
     }
 
+    /** [테스트용] 이미 생성된 이미지를 기반으로 영상 생성 + 병합만 재실행합니다. */
+    @Async("workflowExecutor")
+    public void retryFromVideo(Long generationId) {
+        try {
+            processor.generateCutVideos(generationId);
+            sleep();
+
+            processor.mergeVideos(generationId);
+        } catch (Exception e) {
+            processor.markFailed(generationId, e.getMessage());
+        }
+    }
+
     private void sleep() {
         try {
             Thread.sleep(STEP_DELAY_MS);
