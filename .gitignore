@@ -10,3 +10,5 @@ application-secret.yml
 
 node_modules/
 dist/
+
+uploads/
