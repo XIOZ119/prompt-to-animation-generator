@@ -70,7 +70,8 @@ public class GenerationService {
             }
 
             if (status == GenerationStatus.FAILED || status == GenerationStatus.TIMEOUT) {
-                return GenerationStatusResponse.of(generation, GenerationStep.FAILED, "실패", 0, 0);
+                GenerationStep failedStep = resolveFailedStep(generation);
+                return GenerationStatusResponse.of(generation, failedStep, failedStep.getDisplayName() + " 단계에서 실패", 0, 0);
             }
 
             // PROCESSING: 자식 엔티티로 계산
@@ -112,6 +113,22 @@ public class GenerationService {
         } catch (Exception e) {
             throw new CustomException(ErrorCode.GENERATION_STATUS_FETCH_FAILED);
         }
+    }
+
+    private GenerationStep resolveFailedStep(Generation generation) {
+        Scene scene = sceneRepository.findByGeneration(generation).orElse(null);
+        if (scene == null) return GenerationStep.SCENE_GENERATION;
+
+        long totalCuts = cutRepository.countByScene(scene);
+        if (totalCuts == 0) return GenerationStep.SCENE_GENERATION;
+
+        long completedImages = cutImageRepository.countByCut_SceneAndStatus(scene, GenerationStatus.COMPLETED);
+        if (completedImages < totalCuts) return GenerationStep.CUT_IMAGE_GENERATION;
+
+        long completedVideos = cutVideoRepository.countByCut_SceneAndStatus(scene, GenerationStatus.COMPLETED);
+        if (completedVideos < totalCuts) return GenerationStep.CUT_VIDEO_GENERATION;
+
+        return GenerationStep.VIDEO_MERGE;
     }
 
     @Transactional(readOnly = true)
