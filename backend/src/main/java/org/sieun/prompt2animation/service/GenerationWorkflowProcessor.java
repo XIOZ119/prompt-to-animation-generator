@@ -1,6 +1,7 @@
 package org.sieun.prompt2animation.service;
 
 import lombok.RequiredArgsConstructor;
+import org.sieun.prompt2animation.client.kie.KieClient;
 import org.sieun.prompt2animation.client.openai.OpenAiClient;
 import org.sieun.prompt2animation.client.openai.dto.CutGenerationResult;
 import org.sieun.prompt2animation.client.openai.dto.SceneGenerationResult;
@@ -32,6 +33,7 @@ public class GenerationWorkflowProcessor {
     private final CutImageRepository cutImageRepository;
     private final CutVideoRepository cutVideoRepository;
     private final OpenAiClient openAiClient;
+    private final KieClient kieClient;
 
     @Transactional
     public void markProcessing(Long generationId) {
@@ -53,7 +55,6 @@ public class GenerationWorkflowProcessor {
         }
     }
 
-    @Transactional
     public void generateCutImages(Long generationId) {
         Generation generation = findGeneration(generationId);
         Scene scene = findScene(generation);
@@ -61,10 +62,16 @@ public class GenerationWorkflowProcessor {
 
         for (Cut cut : cuts) {
             CutImage cutImage = CutImage.create(cut);
-            cutImageRepository.save(cutImage);
             cutImage.markProcessing();
-            cutImage.markCompleted(
-                    "https://mock.example.com/images/" + generationId + "-cut" + cut.getCutOrder() + ".png");
+            cutImageRepository.save(cutImage);
+
+            try {
+                String imageUrl = kieClient.generateImage(cut.getImagePrompt());
+                cutImage.markCompleted(imageUrl);
+            } catch (Exception e) {
+                cutImage.markFailed(e.getMessage());
+            }
+            cutImageRepository.save(cutImage);
         }
     }
 
