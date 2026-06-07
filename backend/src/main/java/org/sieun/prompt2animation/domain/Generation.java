@@ -23,8 +23,10 @@ public class Generation extends BaseEntity {
     @Column(nullable = false)
     private GenerationStatus status;
 
+    @Column(columnDefinition = "TEXT")
     private String resultUrl;
 
+    @Column(columnDefinition = "TEXT")
     private String errorMessage;
 
     private LocalDateTime completedAt;
