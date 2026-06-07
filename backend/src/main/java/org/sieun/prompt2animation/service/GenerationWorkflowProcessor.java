@@ -54,8 +54,8 @@ public class GenerationWorkflowProcessor {
         String style = result.style();
         for (CutGenerationResult cut : result.cuts()) {
             int validDuration = cut.durationSec() <= 7 ? 5 : 10;
-            String imagePrompt = cut.imagePrompt() + ", " + style;
-            String videoPrompt = cut.videoPrompt() + ", " + style;
+            String imagePrompt = style + ", " + cut.imagePrompt();
+            String videoPrompt = style + ", " + cut.videoPrompt();
             cutRepository.save(Cut.create(scene, cut.cutOrder(), imagePrompt, videoPrompt, validDuration));
         }
     }
