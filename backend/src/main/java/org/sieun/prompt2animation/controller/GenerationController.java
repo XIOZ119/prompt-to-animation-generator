@@ -1,5 +1,7 @@
 package org.sieun.prompt2animation.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.sieun.prompt2animation.dto.request.GenerationRequest;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Generation", description = "애니메이션 생성 API")
 @RestController
 @RequestMapping("/api/generations")
 @RequiredArgsConstructor
@@ -24,22 +27,25 @@ public class GenerationController {
     private final GenerationService generationService;
     private final GenerationWorkflowService generationWorkflowService;
 
+    @Operation(summary = "애니메이션 생성 요청")
     @PostMapping
     public ApiResponse<GenerationResponse> createGeneration(@Valid @RequestBody GenerationRequest request) {
         return ApiResponse.success("애니메이션 생성 요청 성공", generationService.createGeneration(request));
     }
 
+    @Operation(summary = "생성 상태 조회")
     @GetMapping("/{generationId}")
     public ApiResponse<GenerationStatusResponse> getGenerationStatus(@PathVariable Long generationId) {
         return ApiResponse.success("생성 상태 조회 성공", generationService.getGenerationStatus(generationId));
     }
 
+    @Operation(summary = "생성 결과 조회")
     @GetMapping("/{generationId}/result")
     public ApiResponse<GenerationResultResponse> getGenerationResult(@PathVariable Long generationId) {
         return ApiResponse.success("생성 결과 조회 성공", generationService.getGenerationResult(generationId));
     }
 
-    /** [테스트용] 기존 이미지를 사용해 영상 생성 + 병합만 재실행합니다. */
+    @Operation(summary = "[테스트용] 기존 이미지로 영상 생성 + 병합 재실행")
     @PostMapping("/{generationId}/retry-videos")
     public ApiResponse<Void> retryVideos(@PathVariable Long generationId) {
         generationWorkflowService.retryFromVideo(generationId);
