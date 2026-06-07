@@ -27,16 +27,18 @@ public class OpenAiClient {
             {
               "title": "장면 제목",
               "scenario": "전체 시나리오 설명",
+              "style": "전체 영상에 일관되게 적용할 시각적 스타일 (영문, 예: children's animation style, soft pastel colors, warm lighting)",
               "cuts": [
                 {
                   "cutOrder": 1,
-                  "imagePrompt": "이미지 생성을 위한 상세 영문 프롬프트",
-                  "videoPrompt": "비디오 생성을 위한 상세 영문 프롬프트",
+                  "imagePrompt": "이미지 생성을 위한 상세 영문 프롬프트 (스타일 지시어 제외, 내용/구도/분위기만 작성)",
+                  "videoPrompt": "비디오 생성을 위한 상세 영문 프롬프트 (스타일 지시어 제외, 움직임/전환만 작성)",
                   "durationSec": 5 또는 10 중 하나만 선택 (Kie API 제약)
                 }
               ]
             }
             Cut은 4개를 생성하세요. imagePrompt와 videoPrompt는 영문으로 작성하세요.
+            style은 전체 영상에 공통으로 적용되므로 각 컷의 imagePrompt와 videoPrompt에는 스타일 지시어를 포함하지 마세요.
             각 cut의 durationSec은 반드시 5 또는 10 중 하나여야 합니다. 총 합이 30초 내외가 되도록 분배하세요.
             """;
 

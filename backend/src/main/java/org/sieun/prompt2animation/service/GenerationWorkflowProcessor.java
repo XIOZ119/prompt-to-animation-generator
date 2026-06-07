@@ -51,9 +51,12 @@ public class GenerationWorkflowProcessor {
         Scene scene = Scene.create(generation, result.title(), result.scenario());
         sceneRepository.save(scene);
 
+        String style = result.style();
         for (CutGenerationResult cut : result.cuts()) {
             int validDuration = cut.durationSec() <= 7 ? 5 : 10;
-            cutRepository.save(Cut.create(scene, cut.cutOrder(), cut.imagePrompt(), cut.videoPrompt(), validDuration));
+            String imagePrompt = cut.imagePrompt() + ", " + style;
+            String videoPrompt = cut.videoPrompt() + ", " + style;
+            cutRepository.save(Cut.create(scene, cut.cutOrder(), imagePrompt, videoPrompt, validDuration));
         }
     }
 
