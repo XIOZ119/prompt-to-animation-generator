@@ -39,7 +39,7 @@ public class GenerationService {
     @Transactional
     public GenerationResponse createGeneration(GenerationRequest request) {
         try {
-            Generation generation = Generation.create(request.getUserPrompt());
+            Generation generation = Generation.create(request.userPrompt());
             generationRepository.save(generation);
             eventPublisher.publishEvent(new GenerationCreatedEvent(generation.getId()));
             return GenerationResponse.from(generation);
