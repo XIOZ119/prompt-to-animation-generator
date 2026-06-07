@@ -13,6 +13,7 @@ import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OpenAiClient {
@@ -64,6 +65,7 @@ public class OpenAiClient {
             String content = response.choices().get(0).message().content();
             return OBJECT_MAPPER.readValue(content, SceneGenerationResult.class);
         } catch (Exception e) {
+            log.error("[OpenAI] Scene 생성 실패 - prompt: {}, error: {}", userPrompt, e.getMessage(), e);
             throw new RuntimeException("OpenAI Scene 생성 실패: " + e.getMessage(), e);
         }
     }
