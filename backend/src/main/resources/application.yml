@@ -25,3 +25,9 @@ kie:
   api-key: ${KIE_API_KEY}
   model: google/nano-banana
   video-model: kling-2.6/image-to-video
+
+storage:
+  upload-dir: uploads/results
+
+app:
+  base-url: http://localhost:8080

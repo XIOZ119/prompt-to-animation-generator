@@ -34,6 +34,7 @@ public class GenerationWorkflowProcessor {
     private final CutVideoRepository cutVideoRepository;
     private final OpenAiClient openAiClient;
     private final KieClient kieClient;
+    private final VideoMergeService videoMergeService;
 
     @Transactional
     public void markProcessing(Long generationId) {
@@ -100,10 +101,22 @@ public class GenerationWorkflowProcessor {
         }
     }
 
-    @Transactional
     public void mergeVideos(Long generationId) {
         Generation generation = findGeneration(generationId);
-        generation.markCompleted("https://mock.example.com/results/" + generationId + ".mp4");
+        Scene scene = findScene(generation);
+        List<Cut> cuts = cutRepository.findBySceneOrderByCutOrderAsc(scene);
+
+        List<String> videoUrls = cuts.stream()
+                .map(cut -> cutVideoRepository
+                        .findFirstByCutAndStatusOrderByIdDesc(cut, GenerationStatus.COMPLETED)
+                        .map(CutVideo::getVideoUrl)
+                        .orElseThrow(() -> new CustomException(ErrorCode.GENERATION_RESULT_FETCH_FAILED)))
+                .toList();
+
+        String resultUrl = videoMergeService.merge(generationId, videoUrls);
+
+        generation.markCompleted(resultUrl);
+        generationRepository.save(generation);
     }
 
     @Transactional
