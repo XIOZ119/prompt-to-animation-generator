@@ -7,6 +7,9 @@ import org.sieun.prompt2animation.client.kie.dto.ImageCreateRequest;
 import org.sieun.prompt2animation.client.kie.dto.ImageCreateRequest.Input;
 import org.sieun.prompt2animation.client.kie.dto.RecordInfoResponse;
 import org.sieun.prompt2animation.client.kie.dto.TaskCreateResponse;
+import org.sieun.prompt2animation.client.kie.dto.VideoCreateRequest;
+
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -24,6 +27,9 @@ public class KieClient {
     @Value("${kie.model}")
     private String model;
 
+    @Value("${kie.video-model}")
+    private String videoModel;
+
     public String generateImage(String imagePrompt) {
         try {
             String taskId = createTask(imagePrompt);
@@ -31,6 +37,30 @@ public class KieClient {
         } catch (Exception e) {
             throw new RuntimeException("Kie 이미지 생성 실패: " + e.getMessage(), e);
         }
+    }
+
+    public String generateVideo(String videoPrompt, String imageUrl, Integer durationSec) {
+        try {
+            String taskId = createVideoTask(videoPrompt, imageUrl, durationSec);
+            return pollForResult(taskId);
+        } catch (Exception e) {
+            throw new RuntimeException("Kie 비디오 생성 실패: " + e.getMessage(), e);
+        }
+    }
+
+    private String createVideoTask(String videoPrompt, String imageUrl, Integer durationSec) {
+        VideoCreateRequest request = new VideoCreateRequest(
+                videoModel,
+                new VideoCreateRequest.Input(videoPrompt, List.of(imageUrl), false, String.valueOf(durationSec))
+        );
+
+        TaskCreateResponse response = kieRestClient.post()
+                .uri("/jobs/createTask")
+                .body(request)
+                .retrieve()
+                .body(TaskCreateResponse.class);
+
+        return response.data().taskId();
     }
 
     private String createTask(String imagePrompt) {

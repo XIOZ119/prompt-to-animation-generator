@@ -75,7 +75,6 @@ public class GenerationWorkflowProcessor {
         }
     }
 
-    @Transactional
     public void generateCutVideos(Long generationId) {
         Generation generation = findGeneration(generationId);
         Scene scene = findScene(generation);
@@ -87,10 +86,17 @@ public class GenerationWorkflowProcessor {
                     .orElseThrow(() -> new CustomException(ErrorCode.GENERATION_RESULT_FETCH_FAILED));
 
             CutVideo cutVideo = CutVideo.create(cut, cutImage);
-            cutVideoRepository.save(cutVideo);
             cutVideo.markProcessing();
-            cutVideo.markCompleted(
-                    "https://mock.example.com/videos/" + generationId + "-cut" + cut.getCutOrder() + ".mp4");
+            cutVideoRepository.save(cutVideo);
+
+            try {
+                String videoUrl = kieClient.generateVideo(
+                        cut.getVideoPrompt(), cutImage.getImageUrl(), cut.getDurationSec());
+                cutVideo.markCompleted(videoUrl);
+            } catch (Exception e) {
+                cutVideo.markFailed(e.getMessage());
+            }
+            cutVideoRepository.save(cutVideo);
         }
     }
 
