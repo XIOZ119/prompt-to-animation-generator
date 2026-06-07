@@ -19,6 +19,7 @@ server:
 
 openai:
   api-key: ${OPENAI_API_KEY}
+  model: gpt-5.4-mini
 
 kie:
   api-key: ${KIE_API_KEY}

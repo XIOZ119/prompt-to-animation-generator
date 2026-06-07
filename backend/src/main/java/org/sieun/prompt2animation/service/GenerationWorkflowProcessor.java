@@ -1,6 +1,9 @@
 package org.sieun.prompt2animation.service;
 
 import lombok.RequiredArgsConstructor;
+import org.sieun.prompt2animation.client.openai.OpenAiClient;
+import org.sieun.prompt2animation.client.openai.dto.CutGenerationResult;
+import org.sieun.prompt2animation.client.openai.dto.SceneGenerationResult;
 import org.sieun.prompt2animation.domain.Cut;
 import org.sieun.prompt2animation.domain.CutImage;
 import org.sieun.prompt2animation.domain.CutVideo;
@@ -28,6 +31,7 @@ public class GenerationWorkflowProcessor {
     private final CutRepository cutRepository;
     private final CutImageRepository cutImageRepository;
     private final CutVideoRepository cutVideoRepository;
+    private final OpenAiClient openAiClient;
 
     @Transactional
     public void markProcessing(Long generationId) {
@@ -39,16 +43,13 @@ public class GenerationWorkflowProcessor {
     public void generateScene(Long generationId) {
         Generation generation = findGeneration(generationId);
 
-        Scene scene = Scene.create(generation, "Mock 생성 장면",
-                generation.getUserPrompt() + " 기반 모의 시나리오");
+        SceneGenerationResult result = openAiClient.generateScene(generation.getUserPrompt());
+
+        Scene scene = Scene.create(generation, result.title(), result.scenario());
         sceneRepository.save(scene);
 
-        for (int i = 1; i <= 4; i++) {
-            Cut cut = Cut.create(scene, i,
-                    "컷 " + i + " 모의 이미지 프롬프트",
-                    "컷 " + i + " 모의 비디오 프롬프트",
-                    5);
-            cutRepository.save(cut);
+        for (CutGenerationResult cut : result.cuts()) {
+            cutRepository.save(Cut.create(scene, cut.cutOrder(), cut.imagePrompt(), cut.videoPrompt(), cut.durationSec()));
         }
     }
 
