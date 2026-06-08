@@ -25,7 +25,23 @@ Example:
 
 ## Folder Structure
 
-text src/ ├─ api/ │ └─ generationApi.ts ├─ types/ │ └─ generation.ts ├─ pages/ │ └─ GenerationPage.tsx ├─ components/ │ ├─ PromptForm.tsx │ ├─ ProgressPanel.tsx │ ├─ SceneResult.tsx │ └─ CutResultList.tsx ├─ App.tsx ├─ main.tsx └─ App.css
+```text
+src/
+├─ api/
+│ └─ generationApi.ts
+├─ types/
+│ └─ generation.ts
+├─ pages/
+│ └─ GenerationPage.tsx
+├─ components/
+│ ├─ PromptForm.tsx
+│ ├─ ProgressPanel.tsx
+│ ├─ SceneResult.tsx
+│ └─ CutResultList.tsx
+├─ App.tsx
+├─ main.tsx
+└─ App.css
+```
 
 ## Folder Rules
 
@@ -41,25 +57,45 @@ text src/ ├─ api/ │ └─ generationApi.ts ├─ types/ │ └─ gener
 
 All backend responses use this wrapper:
 
-ts export interface ApiResponse<T> { success: boolean; message: string; errorCode: string | null; data: T; }
+```ts
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  errorCode: string | null;
+  data: T;
+}
+```
 
 ## API Flow
 
 ### 1. Create Generation
 
-http POST /api/generations
+```http
+POST /api/generations
+```
 
 Request Body
 
-json { "userPrompt": "..." }
+```json
+{
+  "userPrompt": "..."
+}
+```
 
 Expected Response Data
 
-ts { generationId: number; status: "PENDING"; }
+```ts
+{
+  generationId: number;
+  status: "PENDING";
+}
+```
 
 ### 2. Poll Generation Status
 
-http GET /api/generations/{generationId}
+```http
+GET /api/generations/{generationId}
+```
 
 Rules:
 
@@ -68,15 +104,25 @@ Rules:
 
 Expected Status Values
 
-ts type GenerationStatus = | "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+```ts
+type GenerationStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+```
 
 Expected Current Step Values
 
-ts type CurrentStep = | "SCENE_GENERATION" | "CUT_IMAGE_GENERATION" | "CUT_VIDEO_GENERATION" | "VIDEO_MERGE";
+```ts
+type CurrentStep =
+  | "SCENE_GENERATION"
+  | "CUT_IMAGE_GENERATION"
+  | "CUT_VIDEO_GENERATION"
+  | "VIDEO_MERGE";
+```
 
 ### 3. Fetch Result
 
-http GET /api/generations/{generationId}/result
+```http
+GET /api/generations/{generationId}/result
+```
 
 Rules:
 
@@ -110,7 +156,46 @@ Rules:
 
 ## Type Definitions
 
-ts export interface ApiResponse<T> { success: boolean; message: string; errorCode: string | null; data: T; } export interface CreateGenerationResponse { generationId: number; status: string; } export interface GenerationStatusResponse { generationId: number; status: string; currentStep: string; progress: number; errorMessage?: string; } export interface Scene { title: string; scenario: string; } export interface Cut { cutOrder: number; imagePrompt: string; videoPrompt: string; imageUrl?: string; videoUrl?: string; } export interface GenerationResultResponse { resultUrl: string; scene: Scene; cuts: Cut[]; }
+```ts
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  errorCode: string | null;
+  data: T;
+}
+
+export interface CreateGenerationResponse {
+  generationId: number;
+  status: string;
+}
+
+export interface GenerationStatusResponse {
+  generationId: number;
+  status: string;
+  currentStep: string;
+  progress: number;
+  errorMessage?: string;
+}
+
+export interface Scene {
+  title: string;
+  scenario: string;
+}
+
+export interface Cut {
+  cutOrder: number;
+  imagePrompt: string;
+  videoPrompt: string;
+  imageUrl?: string;
+  videoUrl?: string;
+}
+
+export interface GenerationResultResponse {
+  resultUrl: string;
+  scene: Scene;
+  cuts: Cut[];
+}
+```
 
 ## UI Priority
 
