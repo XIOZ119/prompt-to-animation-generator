@@ -140,12 +140,15 @@ public class GenerationService {
             Generation generation = generationRepository.findById(generationId)
                     .orElseThrow(() -> new CustomException(ErrorCode.GENERATION_NOT_FOUND));
 
-            if (generation.getStatus() != GenerationStatus.COMPLETED) {
+            GenerationStatus status = generation.getStatus();
+            if (status != GenerationStatus.COMPLETED && status != GenerationStatus.FAILED) {
                 throw new CustomException(ErrorCode.GENERATION_NOT_COMPLETED);
             }
 
-            Scene scene = sceneRepository.findByGeneration(generation)
-                    .orElseThrow(() -> new CustomException(ErrorCode.GENERATION_RESULT_FETCH_FAILED));
+            Scene scene = sceneRepository.findByGeneration(generation).orElse(null);
+            if (scene == null) {
+                return GenerationResultResponse.of(generation, null, List.of());
+            }
 
             List<Cut> cuts = cutRepository.findBySceneOrderByCutOrderAsc(scene);
 

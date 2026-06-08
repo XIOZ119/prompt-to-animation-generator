@@ -7,6 +7,7 @@ public record SceneResponse(
         String scenario
 ) {
     public static SceneResponse from(Scene scene) {
+        if (scene == null) return null;
         return new SceneResponse(scene.getTitle(), scene.getScenario());
     }
 }
