@@ -3,6 +3,8 @@ import type {
   ApiError,
   ApiResponse,
   CreateGenerationResponse,
+  GenerationHistoryPageResponse,
+  GenerationHistoryQueryParams,
   GenerationResultResponse,
   GenerationStatusResponse,
 } from '../types/generation'
@@ -84,6 +86,31 @@ export const fetchGenerationResult = async (
   try {
     const response = await apiClient.get<ApiResponse<GenerationResultResponse>>(
       `/api/generations/${generationId}/result`,
+    )
+
+    return unwrap(response.data)
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export const fetchGenerationHistory = async ({
+  status = 'ALL',
+  page = 0,
+  size = 6,
+  sort = 'latest',
+}: GenerationHistoryQueryParams = {}): Promise<GenerationHistoryPageResponse> => {
+  try {
+    const response = await apiClient.get<ApiResponse<GenerationHistoryPageResponse>>(
+      '/api/generations',
+      {
+        params: {
+          status,
+          page,
+          size,
+          sort,
+        },
+      },
     )
 
     return unwrap(response.data)
