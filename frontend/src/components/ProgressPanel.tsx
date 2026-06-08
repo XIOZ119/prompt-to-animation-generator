@@ -44,13 +44,9 @@ function ProgressPanel({ status, isCreating, errorMessage }: ProgressPanelProps)
               )}
             </div>
 
-            {isCompleted ? (
+            {isCompleted && (
               <p className="status-message">
                 애니메이션 생성이 성공적으로 완료되었습니다!
-              </p>
-            ) : (
-              <p className="status-message">
-                {status?.currentStepMessage || '생성 요청을 준비하고 있습니다.'}
               </p>
             )}
 

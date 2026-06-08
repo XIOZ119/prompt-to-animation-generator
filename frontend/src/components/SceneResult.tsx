@@ -24,7 +24,7 @@ function SceneResult({ result, selectedCutOrder, onSelectCut }: SceneResultProps
       ) : (
         <div className="result-empty">
           <strong>생성된 최종 영상이 여기에 표시됩니다.</strong>
-          <span>완료 상태가 되면 결과 API를 호출합니다.</span>
+          <span>완료되면 최종 영상과 컷 결과가 표시됩니다.</span>
         </div>
       )}
 
