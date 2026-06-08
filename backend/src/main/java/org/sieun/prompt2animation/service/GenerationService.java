@@ -198,7 +198,7 @@ public class GenerationService {
                     .orElseThrow(() -> new CustomException(ErrorCode.GENERATION_NOT_FOUND));
 
             GenerationStatus status = generation.getStatus();
-            if (status != GenerationStatus.COMPLETED && status != GenerationStatus.FAILED) {
+            if (status != GenerationStatus.COMPLETED && status != GenerationStatus.FAILED && status != GenerationStatus.TIMEOUT) {
                 throw new CustomException(ErrorCode.GENERATION_NOT_COMPLETED);
             }
 
