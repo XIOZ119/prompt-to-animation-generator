@@ -88,7 +88,11 @@ public class GenerationWorkflowProcessor {
         for (Cut cut : cuts) {
             CutImage cutImage = cutImageRepository
                     .findFirstByCutAndStatusOrderByIdDesc(cut, GenerationStatus.COMPLETED)
-                    .orElseThrow(() -> new CustomException(ErrorCode.GENERATION_RESULT_FETCH_FAILED));
+                    .orElse(null);
+
+            if (cutImage == null) {
+                continue;
+            }
 
             CutVideo cutVideo = CutVideo.create(cut, cutImage);
             cutVideo.markProcessing();
