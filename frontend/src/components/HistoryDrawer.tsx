@@ -1,12 +1,35 @@
-import type { GenerationHistoryItem } from '../types/generation'
+import type {
+  ApiError,
+  GenerationHistoryPageResponse,
+  GenerationHistoryResponse,
+  GenerationHistorySort,
+  GenerationHistoryStatusFilter,
+} from '../types/generation'
 
 interface HistoryDrawerProps {
-  histories: GenerationHistoryItem[]
+  history?: GenerationHistoryPageResponse
+  isLoading: boolean
+  error?: ApiError | null
   isOpen: boolean
+  page: number
   selectedGenerationId?: number | null
+  sort: GenerationHistorySort
+  statusFilter: GenerationHistoryStatusFilter
   onClose: () => void
-  onSelect: (history: GenerationHistoryItem) => void
+  onPageChange: (page: number) => void
+  onSelect: (history: GenerationHistoryResponse) => void
+  onSortChange: (sort: GenerationHistorySort) => void
+  onStatusFilterChange: (status: GenerationHistoryStatusFilter) => void
 }
+
+const statusTabs: Array<{
+  label: string
+  value: GenerationHistoryStatusFilter
+}> = [
+  { label: '전체', value: 'ALL' },
+  { label: '완료', value: 'COMPLETED' },
+  { label: '실패', value: 'FAILED' },
+]
 
 const formatCreatedAt = (createdAt?: string) => {
   if (!createdAt) {
@@ -28,16 +51,54 @@ const formatCreatedAt = (createdAt?: string) => {
   })
 }
 
+const getStatusLabel = (status: string) => {
+  if (status === 'COMPLETED') {
+    return '완료'
+  }
+
+  if (status === 'TIMEOUT') {
+    return '시간 초과'
+  }
+
+  if (status === 'FAILED') {
+    return '실패'
+  }
+
+  if (status === 'PROCESSING') {
+    return '진행 중'
+  }
+
+  return '대기'
+}
+
+const truncateText = (text: string, maxLength = 15) =>
+  text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
+
 function HistoryDrawer({
-  histories,
+  history,
+  isLoading,
+  error,
   isOpen,
+  page,
   selectedGenerationId,
+  sort,
+  statusFilter,
   onClose,
+  onPageChange,
   onSelect,
+  onSortChange,
+  onStatusFilterChange,
 }: HistoryDrawerProps) {
   if (!isOpen) {
     return null
   }
+
+  const histories = history?.content ?? []
+  const totalPages = history?.totalPages ?? 0
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index).slice(
+    0,
+    8,
+  )
 
   return (
     <aside className="history-drawer" aria-label="생성 기록">
@@ -49,68 +110,115 @@ function HistoryDrawer({
       </div>
 
       <div className="history-tabs">
-        <button className="is-active" type="button">
-          전체
-        </button>
-        <button type="button">완료</button>
-        <button type="button">실패</button>
-        <select aria-label="정렬">
-          <option>최신순</option>
+        {statusTabs.map((tab) => (
+          <button
+            className={statusFilter === tab.value ? 'is-active' : ''}
+            key={tab.value}
+            onClick={() => onStatusFilterChange(tab.value)}
+            type="button"
+          >
+            {tab.label}
+          </button>
+        ))}
+        <select
+          aria-label="정렬"
+          onChange={(event) =>
+            onSortChange(event.target.value as GenerationHistorySort)
+          }
+          value={sort}
+        >
+          <option value="latest">최신순</option>
+          <option value="oldest">오래된순</option>
         </select>
       </div>
 
       <div className="history-list">
-        {histories.length ? (
-          histories.map((history) => (
-            <button
-              className={`history-item ${
-                selectedGenerationId === history.generationId ? 'is-selected' : ''
-              }`}
-              key={history.generationId}
-              onClick={() => onSelect(history)}
-              type="button"
-            >
-              <div className="history-thumb">
-                {history.result?.cuts[0]?.imageUrl ? (
-                  <img alt="" src={history.result.cuts[0].imageUrl} />
-                ) : (
-                  <span>대기</span>
-                )}
-              </div>
-              <div>
-                <strong>{history.result?.scene.title || history.prompt}</strong>
-                <span>
-                  30초 <i aria-hidden="true">|</i> {formatCreatedAt(history.createdAt)}
-                </span>
-                {(history.status === 'FAILED' || history.status === 'TIMEOUT') && (
-                  <small>
-                    {history.statusDetail?.errorMessage ||
-                      (history.status === 'TIMEOUT' ? '시간 초과' : '생성 실패')}
-                  </small>
-                )}
-              </div>
-              <em
-                className={
-                  history.status === 'FAILED' || history.status === 'TIMEOUT'
-                    ? 'is-failed'
-                    : ''
-                }
+        {isLoading ? (
+          <div className="history-empty">생성 기록을 불러오는 중입니다.</div>
+        ) : error ? (
+          <div className="history-empty">
+            {error.errorCode
+              ? `${error.message} (${error.errorCode})`
+              : error.message}
+          </div>
+        ) : histories.length ? (
+          histories.map((item) => {
+            const isFailed = item.status === 'FAILED' || item.status === 'TIMEOUT'
+
+            return (
+              <button
+                className={`history-item ${
+                  selectedGenerationId === item.generationId ? 'is-selected' : ''
+                }`}
+                key={item.generationId}
+                onClick={() => onSelect(item)}
+                type="button"
               >
-                {history.status === 'FAILED'
-                  ? '실패'
-                  : history.status === 'TIMEOUT'
-                    ? '시간 초과'
-                    : '완료'}
-              </em>
-              <span className="chevron" aria-hidden="true">
-                ›
-              </span>
-            </button>
-          ))
+                <div className="history-thumb">
+                  {item.thumbnailUrl ? (
+                    <img alt="" src={item.thumbnailUrl} />
+                  ) : (
+                    <span>이미지 없음</span>
+                  )}
+                </div>
+                <div>
+                  <strong className={item.title ? '' : 'is-empty-title'}>
+                    {item.title ?? '제목이 없습니다.'}
+                  </strong>
+                  <span>
+                    {item.durationSec ?? 0}초 <i aria-hidden="true">|</i>{' '}
+                    {formatCreatedAt(item.createdAt)}
+                  </span>
+                  {isFailed && (
+                    <small>
+                      {truncateText(
+                        item.errorMessage || getStatusLabel(item.status),
+                      )}
+                    </small>
+                  )}
+                </div>
+                <em className={isFailed ? 'is-failed' : ''}>
+                  {getStatusLabel(item.status)}
+                </em>
+                <span className="chevron" aria-hidden="true">
+                  ›
+                </span>
+              </button>
+            )
+          })
         ) : (
-          <div className="history-empty">아직 생성 기록이 없습니다.</div>
+          <div className="history-empty">생성 기록이 없습니다.</div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="history-pagination">
+          <button
+            disabled={!history?.hasPrevious}
+            onClick={() => onPageChange(Math.max(page - 1, 0))}
+            type="button"
+          >
+            ‹
+          </button>
+          {pageNumbers.map((pageNumber) => (
+            <button
+              className={page === pageNumber ? 'is-active' : ''}
+              key={pageNumber}
+              onClick={() => onPageChange(pageNumber)}
+              type="button"
+            >
+              {pageNumber + 1}
+            </button>
+          ))}
+          <button
+            disabled={!history?.hasNext}
+            onClick={() => onPageChange(page + 1)}
+            type="button"
+          >
+            ›
+          </button>
+        </div>
+      )}
     </aside>
   )
 }

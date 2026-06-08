@@ -70,6 +70,43 @@ export interface GenerationResultResponse {
   cuts: Cut[];
 }
 
+export type GenerationHistoryStatusFilter =
+  | "ALL"
+  | "PENDING"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED"
+  | "TIMEOUT";
+
+export type GenerationHistorySort = "latest" | "oldest";
+
+export interface GenerationHistoryResponse {
+  generationId: number;
+  title: string | null;
+  thumbnailUrl: string | null;
+  status: GenerationStatus;
+  durationSec: number | null;
+  createdAt: string;
+  errorMessage: string | null;
+}
+
+export interface GenerationHistoryPageResponse {
+  content: GenerationHistoryResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
+export interface GenerationHistoryQueryParams {
+  status?: GenerationHistoryStatusFilter;
+  page?: number;
+  size?: number;
+  sort?: GenerationHistorySort;
+}
+
 export interface GenerationHistoryItem {
   generationId: number;
   prompt: string;

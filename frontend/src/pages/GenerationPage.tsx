@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   createGeneration,
+  fetchGenerationHistory,
   fetchGenerationResult,
   fetchGenerationStatus,
 } from '../api/generationApi'
@@ -12,7 +13,9 @@ import PromptForm from '../components/PromptForm'
 import SceneResult from '../components/SceneResult'
 import type {
   ApiError,
-  GenerationHistoryItem,
+  GenerationHistoryResponse,
+  GenerationHistorySort,
+  GenerationHistoryStatusFilter,
   GenerationResultResponse,
   GenerationStatusResponse,
 } from '../types/generation'
@@ -28,8 +31,11 @@ function GenerationPage() {
   const [generationId, setGenerationId] = useState<number | null>(null)
   const [resultLookupId, setResultLookupId] = useState('')
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [historyPage, setHistoryPage] = useState(0)
+  const [historySort, setHistorySort] = useState<GenerationHistorySort>('latest')
+  const [historyStatusFilter, setHistoryStatusFilter] =
+    useState<GenerationHistoryStatusFilter>('ALL')
   const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null)
-  const [histories, setHistories] = useState<GenerationHistoryItem[]>([])
   const [selectedHistoryResult, setSelectedHistoryResult] =
     useState<GenerationResultResponse>()
   const [selectedHistoryStatus, setSelectedHistoryStatus] =
@@ -41,15 +47,6 @@ function GenerationPage() {
       setGenerationId(data.generationId)
       setSelectedHistoryResult(undefined)
       setSelectedHistoryStatus(undefined)
-      setHistories((current) => [
-        {
-          generationId: data.generationId,
-          prompt,
-          status: data.status,
-          createdAt: data.createdAt,
-        },
-        ...current.filter((item) => item.generationId !== data.generationId),
-      ])
     },
   })
 
@@ -72,41 +69,34 @@ function GenerationPage() {
     enabled: generationId !== null && shouldFetchResult,
   })
 
+  const historyQuery = useQuery({
+    queryKey: [
+      'generation-history',
+      historyStatusFilter,
+      historyPage,
+      historySort,
+    ],
+    queryFn: () =>
+      fetchGenerationHistory({
+        status: historyStatusFilter,
+        page: historyPage,
+        size: 6,
+        sort: historySort,
+      }),
+    enabled: historyOpen,
+  })
+
   const previousResultMutation = useMutation({
     mutationFn: fetchGenerationResult,
     onSuccess: (data, requestedGenerationId) => {
       setGenerationId(requestedGenerationId)
       setSelectedHistoryResult(data)
       setSelectedHistoryStatus(undefined)
-      setHistories((current) =>
-        current.map((item) =>
-          item.generationId === requestedGenerationId
-            ? {
-                ...item,
-                result: data,
-              }
-            : item,
-        ),
-      )
     },
   })
 
   const activeResult = selectedHistoryResult || resultQuery.data
   const activeStatus = selectedHistoryStatus || statusQuery.data
-  const displayHistories = useMemo(
-    () =>
-      histories.map((item) =>
-        item.generationId === generationId
-          ? {
-              ...item,
-              status: statusQuery.data?.status ?? item.status,
-              statusDetail: statusQuery.data ?? item.statusDetail,
-              result: resultQuery.data ?? item.result,
-            }
-          : item,
-      ),
-    [generationId, histories, resultQuery.data, statusQuery.data],
-  )
   const apiError =
     (createMutation.error as ApiError | null)?.message ||
     (statusQuery.error as ApiError | null)?.message ||
@@ -140,10 +130,23 @@ function GenerationPage() {
     createMutation.mutate(prompt.trim())
   }
 
-  const handleSelectHistory = (history: GenerationHistoryItem) => {
+  const handleSelectHistoryRecord = (history: GenerationHistoryResponse) => {
     setGenerationId(history.generationId)
-    setSelectedHistoryResult(history.result)
-    setSelectedHistoryStatus(history.statusDetail)
+    setSelectedHistoryStatus(undefined)
+    setSelectedHistoryResult(undefined)
+    previousResultMutation.mutate(history.generationId)
+  }
+
+  const handleHistoryStatusFilterChange = (
+    status: GenerationHistoryStatusFilter,
+  ) => {
+    setHistoryStatusFilter(status)
+    setHistoryPage(0)
+  }
+
+  const handleHistorySortChange = (sort: GenerationHistorySort) => {
+    setHistorySort(sort)
+    setHistoryPage(0)
   }
 
   const handleFetchResultById = () => {
@@ -228,11 +231,19 @@ function GenerationPage() {
       {apiError && <div className="toast-error">{apiError}</div>}
 
       <HistoryDrawer
-        histories={displayHistories}
+        error={(historyQuery.error as ApiError | null) ?? null}
+        history={historyQuery.data}
+        isLoading={historyQuery.isLoading || historyQuery.isFetching}
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
-        onSelect={handleSelectHistory}
+        onPageChange={setHistoryPage}
+        onSelect={handleSelectHistoryRecord}
+        onSortChange={handleHistorySortChange}
+        onStatusFilterChange={handleHistoryStatusFilterChange}
+        page={historyPage}
         selectedGenerationId={generationId}
+        sort={historySort}
+        statusFilter={historyStatusFilter}
       />
 
       {videoModalUrl && (

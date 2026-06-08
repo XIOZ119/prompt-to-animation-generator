@@ -768,8 +768,10 @@ th {
   bottom: 0;
   box-shadow: -22px 0 45px rgba(15, 23, 42, 0.14);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   max-width: 560px;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 32px 28px;
   position: fixed;
   right: 0;
@@ -832,7 +834,10 @@ th {
 .history-list {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .history-item {
@@ -857,6 +862,7 @@ th {
   aspect-ratio: 16 / 9;
   background: #eef2f7;
   border-radius: 6px;
+  display: flex;
   overflow: hidden;
 }
 
@@ -869,19 +875,29 @@ th {
   align-items: center;
   color: #51627c;
   display: flex;
+  font-weight: 700;
   height: 100%;
   justify-content: center;
+  width: 100%;
 }
 
 .history-item strong,
 .history-item span,
 .history-item small {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .history-item strong {
   font-size: 15px;
   margin-bottom: 10px;
+}
+
+.history-item strong.is-empty-title {
+  color: #94a3b8;
+  font-weight: 700;
 }
 
 .history-item span,
@@ -913,6 +929,39 @@ th {
 .empty-text {
   color: #667794;
   padding: 22px;
+}
+
+.history-pagination {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  justify-content: center;
+  padding-top: 18px;
+}
+
+.history-pagination button {
+  background: #ffffff;
+  border: 1px solid #d8dfeb;
+  border-radius: 6px;
+  color: #07142e;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 10px;
+}
+
+.history-pagination button.is-active {
+  background: #075bea;
+  border-color: #075bea;
+  color: #ffffff;
+}
+
+.history-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .field-error,
