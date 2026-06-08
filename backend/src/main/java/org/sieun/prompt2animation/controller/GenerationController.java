@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.sieun.prompt2animation.dto.request.GenerationRequest;
 import org.sieun.prompt2animation.dto.response.ApiResponse;
+import org.sieun.prompt2animation.dto.response.GenerationHistoryPageResponse;
 import org.sieun.prompt2animation.dto.response.GenerationResponse;
 import org.sieun.prompt2animation.dto.response.GenerationResultResponse;
 import org.sieun.prompt2animation.dto.response.GenerationStatusResponse;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Generation", description = "애니메이션 생성 API")
@@ -26,6 +28,17 @@ public class GenerationController {
 
     private final GenerationService generationService;
     private final GenerationWorkflowService generationWorkflowService;
+
+    @Operation(summary = "생성 기록 조회")
+    @GetMapping
+    public ApiResponse<GenerationHistoryPageResponse> getGenerationHistory(
+            @RequestParam(defaultValue = "ALL") String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size,
+            @RequestParam(defaultValue = "latest") String sort
+    ) {
+        return ApiResponse.success("생성 기록 조회 성공", generationService.getGenerationHistory(status, page, size, sort));
+    }
 
     @Operation(summary = "애니메이션 생성 요청")
     @PostMapping

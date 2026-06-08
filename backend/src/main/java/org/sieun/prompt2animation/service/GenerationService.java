@@ -9,6 +9,8 @@ import org.sieun.prompt2animation.domain.Scene;
 import org.sieun.prompt2animation.dto.request.GenerationRequest;
 import org.sieun.prompt2animation.dto.response.CutResponse;
 import org.sieun.prompt2animation.dto.response.CutStatusResponse;
+import org.sieun.prompt2animation.dto.response.GenerationHistoryPageResponse;
+import org.sieun.prompt2animation.dto.response.GenerationHistoryResponse;
 import org.sieun.prompt2animation.dto.response.GenerationResponse;
 import org.sieun.prompt2animation.dto.response.GenerationResultResponse;
 import org.sieun.prompt2animation.dto.response.GenerationStatusResponse;
@@ -21,10 +23,14 @@ import org.sieun.prompt2animation.repository.CutVideoRepository;
 import org.sieun.prompt2animation.repository.GenerationRepository;
 import org.sieun.prompt2animation.repository.SceneRepository;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +42,54 @@ public class GenerationService {
     private final CutImageRepository cutImageRepository;
     private final CutVideoRepository cutVideoRepository;
     private final ApplicationEventPublisher eventPublisher;
+
+    private static final Set<String> VALID_STATUSES = Set.of("ALL", "PENDING", "PROCESSING", "COMPLETED", "FAILED");
+    private static final Set<String> VALID_SORTS = Set.of("latest", "oldest");
+
+    @Transactional(readOnly = true)
+    public GenerationHistoryPageResponse getGenerationHistory(String status, int page, int size, String sort) {
+        if (page < 0) throw new CustomException(ErrorCode.INVALID_PAGE_REQUEST);
+        if (size <= 0) throw new CustomException(ErrorCode.INVALID_SIZE_REQUEST);
+        if (!VALID_STATUSES.contains(status)) throw new CustomException(ErrorCode.INVALID_STATUS_FILTER);
+        if (!VALID_SORTS.contains(sort)) throw new CustomException(ErrorCode.INVALID_SORT_OPTION);
+
+        try {
+            Sort sortBy = "oldest".equals(sort)
+                    ? Sort.by("createdAt").ascending()
+                    : Sort.by("createdAt").descending();
+            PageRequest pageable = PageRequest.of(page, size, sortBy);
+
+            Page<Generation> generationPage = "ALL".equals(status)
+                    ? generationRepository.findAll(pageable)
+                    : generationRepository.findByStatus(GenerationStatus.valueOf(status), pageable);
+
+            List<GenerationHistoryResponse> content = generationPage.getContent().stream()
+                    .map(this::toHistoryResponse)
+                    .toList();
+
+            return GenerationHistoryPageResponse.of(generationPage, content);
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.GENERATION_HISTORY_FETCH_FAILED);
+        }
+    }
+
+    private GenerationHistoryResponse toHistoryResponse(Generation generation) {
+        String title = sceneRepository.findByGenerationId(generation.getId())
+                .map(scene -> scene.getTitle())
+                .orElse(null);
+
+        Integer durationSec = title != null
+                ? cutRepository.sumDurationSecByGenerationId(generation.getId())
+                : null;
+
+        String thumbnailUrl = cutImageRepository
+                .findThumbnailsByGenerationId(generation.getId(), PageRequest.of(0, 1))
+                .stream().findFirst().orElse(null);
+
+        return GenerationHistoryResponse.of(generation, title, thumbnailUrl, durationSec);
+    }
 
     @Transactional
     public GenerationResponse createGeneration(GenerationRequest request) {

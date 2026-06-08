@@ -39,7 +39,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
-        ErrorCode errorCode = ErrorCode.INVALID_GENERATION_ID;
+        ErrorCode errorCode = switch (e.getName()) {
+            case "page" -> ErrorCode.INVALID_PAGE_REQUEST;
+            case "size" -> ErrorCode.INVALID_SIZE_REQUEST;
+            default -> ErrorCode.INVALID_GENERATION_ID;
+        };
         return ResponseEntity
                 .status(errorCode.getHttpStatus())
                 .body(ApiResponse.error(errorCode.getMessage(), errorCode.name()));

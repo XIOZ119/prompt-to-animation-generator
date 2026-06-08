@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface SceneRepository extends JpaRepository<Scene, Long> {
 
     Optional<Scene> findByGeneration(Generation generation);
+
+    Optional<Scene> findByGenerationId(Long generationId);
 }
