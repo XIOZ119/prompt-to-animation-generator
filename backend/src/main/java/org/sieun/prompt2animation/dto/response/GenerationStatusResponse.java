@@ -4,6 +4,8 @@ import org.sieun.prompt2animation.domain.Generation;
 import org.sieun.prompt2animation.domain.GenerationStatus;
 import org.sieun.prompt2animation.domain.GenerationStep;
 
+import java.util.List;
+
 public record GenerationStatusResponse(
         Long generationId,
         GenerationStatus status,
@@ -12,14 +14,16 @@ public record GenerationStatusResponse(
         String currentStepMessage,
         Integer completedStepCount,
         Integer totalStepCount,
-        String errorMessage
+        String errorMessage,
+        List<CutStatusResponse> cuts
 ) {
     public static GenerationStatusResponse of(
             Generation generation,
             GenerationStep currentStep,
             String currentStepMessage,
             int completedStepCount,
-            int totalStepCount
+            int totalStepCount,
+            List<CutStatusResponse> cuts
     ) {
         Integer progress = totalStepCount > 0
                 ? completedStepCount * 100 / totalStepCount
@@ -33,7 +37,8 @@ public record GenerationStatusResponse(
                 currentStepMessage,
                 completedStepCount,
                 totalStepCount,
-                generation.getErrorMessage()
+                generation.getErrorMessage(),
+                cuts
         );
     }
 }

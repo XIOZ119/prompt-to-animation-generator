@@ -6,11 +6,16 @@ import org.sieun.prompt2animation.domain.GenerationStatus;
 import org.sieun.prompt2animation.domain.Scene;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface CutVideoRepository extends JpaRepository<CutVideo, Long> {
 
     Optional<CutVideo> findFirstByCutAndStatusOrderByIdDesc(Cut cut, GenerationStatus status);
 
+    Optional<CutVideo> findFirstByCutOrderByIdDesc(Cut cut);
+
     long countByCut_SceneAndStatus(Scene scene, GenerationStatus status);
+
+    long countByCut_SceneAndStatusIn(Scene scene, List<GenerationStatus> statuses);
 }
