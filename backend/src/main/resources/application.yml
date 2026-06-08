@@ -35,3 +35,6 @@ storage:
 
 app:
   base-url: http://localhost:8080
+
+rate-limit:
+  max-active-generations: 3

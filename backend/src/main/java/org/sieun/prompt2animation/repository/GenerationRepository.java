@@ -6,7 +6,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 public interface GenerationRepository extends JpaRepository<Generation, Long> {
 
     Page<Generation> findByStatus(GenerationStatus status, Pageable pageable);
+
+    long countByStatusIn(List<GenerationStatus> statuses);
 }

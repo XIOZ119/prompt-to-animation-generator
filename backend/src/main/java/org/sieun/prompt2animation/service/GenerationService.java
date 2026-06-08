@@ -22,6 +22,7 @@ import org.sieun.prompt2animation.repository.CutRepository;
 import org.sieun.prompt2animation.repository.CutVideoRepository;
 import org.sieun.prompt2animation.repository.GenerationRepository;
 import org.sieun.prompt2animation.repository.SceneRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -42,6 +43,9 @@ public class GenerationService {
     private final CutImageRepository cutImageRepository;
     private final CutVideoRepository cutVideoRepository;
     private final ApplicationEventPublisher eventPublisher;
+
+    @Value("${rate-limit.max-active-generations:3}")
+    private int maxActiveGenerations;
 
     private static final Set<String> VALID_STATUSES = Set.of("ALL", "PENDING", "PROCESSING", "COMPLETED", "FAILED");
     private static final Set<String> VALID_SORTS = Set.of("latest", "oldest");
@@ -93,6 +97,11 @@ public class GenerationService {
 
     @Transactional
     public GenerationResponse createGeneration(GenerationRequest request) {
+        long active = generationRepository.countByStatusIn(List.of(GenerationStatus.PENDING, GenerationStatus.PROCESSING));
+        if (active >= maxActiveGenerations) {
+            throw new CustomException(ErrorCode.TOO_MANY_REQUESTS);
+        }
+
         try {
             Generation generation = Generation.create(request.userPrompt());
             generationRepository.save(generation);
