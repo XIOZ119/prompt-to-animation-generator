@@ -22,3 +22,11 @@ services:
       - postgres
     volumes:
       - ./uploads:/app/uploads/results
+
+  frontend:
+    build: ./frontend
+    container_name: promptflow-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
