@@ -35,6 +35,8 @@ function GenerationPage() {
   const [historySort, setHistorySort] = useState<GenerationHistorySort>('latest')
   const [historyStatusFilter, setHistoryStatusFilter] =
     useState<GenerationHistoryStatusFilter>('ALL')
+  const [selectedHistoryRecord, setSelectedHistoryRecord] =
+    useState<GenerationHistoryResponse | null>(null)
   const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null)
   const [selectedHistoryResult, setSelectedHistoryResult] =
     useState<GenerationResultResponse>()
@@ -86,6 +88,12 @@ function GenerationPage() {
     enabled: historyOpen,
   })
 
+  const historyDetailQuery = useQuery({
+    queryKey: ['generation-history-detail', selectedHistoryRecord?.generationId],
+    queryFn: () => fetchGenerationResult(selectedHistoryRecord!.generationId),
+    enabled: historyOpen && selectedHistoryRecord !== null,
+  })
+
   const previousResultMutation = useMutation({
     mutationFn: fetchGenerationResult,
     onSuccess: (data, requestedGenerationId) => {
@@ -131,10 +139,7 @@ function GenerationPage() {
   }
 
   const handleSelectHistoryRecord = (history: GenerationHistoryResponse) => {
-    setGenerationId(history.generationId)
-    setSelectedHistoryStatus(undefined)
-    setSelectedHistoryResult(undefined)
-    previousResultMutation.mutate(history.generationId)
+    setSelectedHistoryRecord(history)
   }
 
   const handleHistoryStatusFilterChange = (
@@ -189,7 +194,10 @@ function GenerationPage() {
           </button>
           <button
             className="history-button"
-            onClick={() => setHistoryOpen(true)}
+            onClick={() => {
+              setSelectedHistoryRecord(null)
+              setHistoryOpen(true)
+            }}
             type="button"
           >
             <span aria-hidden="true">↻</span>
@@ -232,10 +240,18 @@ function GenerationPage() {
 
       <HistoryDrawer
         error={(historyQuery.error as ApiError | null) ?? null}
+        detailError={(historyDetailQuery.error as ApiError | null) ?? null}
+        detailResult={historyDetailQuery.data}
+        detailRecord={selectedHistoryRecord}
         history={historyQuery.data}
         isLoading={historyQuery.isLoading || historyQuery.isFetching}
+        isDetailLoading={
+          historyDetailQuery.isLoading || historyDetailQuery.isFetching
+        }
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
+        onDetailBack={() => setSelectedHistoryRecord(null)}
+        onOpenVideo={setVideoModalUrl}
         onPageChange={setHistoryPage}
         onSelect={handleSelectHistoryRecord}
         onSortChange={handleHistorySortChange}

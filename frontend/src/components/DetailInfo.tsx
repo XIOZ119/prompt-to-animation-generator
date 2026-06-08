@@ -10,11 +10,6 @@ type DetailTab = 'scene' | 'cuts'
 
 function DetailInfo({ result, onOpenVideo }: DetailInfoProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>('scene')
-  const [selectedCutOrder, setSelectedCutOrder] = useState<number | null>(null)
-  const selectedCut =
-    result?.cuts.find(
-      (cut) => cut.cutOrder === (selectedCutOrder ?? result.cuts[0]?.cutOrder),
-    ) ?? null
 
   return (
     <section className="panel detail-panel">
@@ -55,58 +50,52 @@ function DetailInfo({ result, onOpenVideo }: DetailInfoProps) {
       )}
 
       {activeTab === 'cuts' && (
-        <div className="detail-box cut-detail-box">
+        <div className="table-wrap">
           {result?.cuts.length ? (
-            <>
-              <div className="cut-button-list">
+            <table>
+              <thead>
+                <tr>
+                  <th>컷</th>
+                  <th>지속 시간</th>
+                  <th>이미지 프롬프트</th>
+                  <th>이미지</th>
+                  <th>비디오</th>
+                </tr>
+              </thead>
+              <tbody>
                 {result.cuts.map((cut) => (
-                  <button
-                    className={
-                      selectedCut?.cutOrder === cut.cutOrder ? 'is-active' : ''
-                    }
-                    key={cut.cutOrder}
-                    onClick={() => setSelectedCutOrder(cut.cutOrder)}
-                    type="button"
-                  >
-                    Cut {cut.cutOrder}
-                  </button>
+                  <tr key={cut.cutOrder}>
+                    <td>Cut {cut.cutOrder}</td>
+                    <td>{cut.durationSec ?? 5}초</td>
+                    <td>{cut.imagePrompt}</td>
+                    <td>
+                      {cut.imageUrl ? (
+                        <img
+                          alt={`Cut ${cut.cutOrder} 이미지`}
+                          className="table-thumb"
+                          src={cut.imageUrl}
+                        />
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td>
+                      {cut.videoUrl ? (
+                        <button
+                          className="play-link"
+                          onClick={() => onOpenVideo(cut.videoUrl!)}
+                          type="button"
+                        >
+                          ▶
+                        </button>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                  </tr>
                 ))}
-              </div>
-
-              {selectedCut && (
-                <div className="selected-cut-detail">
-                  <div className="selected-cut-media">
-                    {selectedCut.imageUrl ? (
-                      <img
-                        alt={`Cut ${selectedCut.cutOrder} 이미지`}
-                        src={selectedCut.imageUrl}
-                      />
-                    ) : (
-                      <span>이미지 없음</span>
-                    )}
-                    {selectedCut.videoUrl && (
-                      <button
-                        className="selected-cut-play"
-                        onClick={() => onOpenVideo(selectedCut.videoUrl!)}
-                        type="button"
-                      >
-                        ▶ 비디오 재생
-                      </button>
-                    )}
-                  </div>
-                  <dl className="selected-cut-info">
-                    <dt>컷</dt>
-                    <dd>Cut {selectedCut.cutOrder}</dd>
-                    <dt>지속 시간</dt>
-                    <dd>{selectedCut.durationSec ?? 5}초</dd>
-                    <dt>이미지 프롬프트</dt>
-                    <dd>{selectedCut.imagePrompt}</dd>
-                    <dt>비디오 프롬프트</dt>
-                    <dd>{selectedCut.videoPrompt}</dd>
-                  </dl>
-                </div>
-              )}
-            </>
+              </tbody>
+            </table>
           ) : (
             <p className="empty-text">완료 후 컷 정보가 표시됩니다.</p>
           )}

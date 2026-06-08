@@ -1,21 +1,29 @@
+import { useState } from 'react'
 import type {
   ApiError,
   GenerationHistoryPageResponse,
   GenerationHistoryResponse,
   GenerationHistorySort,
   GenerationHistoryStatusFilter,
+  GenerationResultResponse,
 } from '../types/generation'
 
 interface HistoryDrawerProps {
   history?: GenerationHistoryPageResponse
+  detailRecord?: GenerationHistoryResponse | null
+  detailResult?: GenerationResultResponse
   isLoading: boolean
+  isDetailLoading: boolean
   error?: ApiError | null
+  detailError?: ApiError | null
   isOpen: boolean
   page: number
   selectedGenerationId?: number | null
   sort: GenerationHistorySort
   statusFilter: GenerationHistoryStatusFilter
   onClose: () => void
+  onDetailBack: () => void
+  onOpenVideo: (videoUrl: string) => void
   onPageChange: (page: number) => void
   onSelect: (history: GenerationHistoryResponse) => void
   onSortChange: (sort: GenerationHistorySort) => void
@@ -76,19 +84,28 @@ const truncateText = (text: string, maxLength = 15) =>
 
 function HistoryDrawer({
   history,
+  detailRecord,
+  detailResult,
   isLoading,
+  isDetailLoading,
   error,
+  detailError,
   isOpen,
   page,
   selectedGenerationId,
   sort,
   statusFilter,
   onClose,
+  onDetailBack,
+  onOpenVideo,
   onPageChange,
   onSelect,
   onSortChange,
   onStatusFilterChange,
 }: HistoryDrawerProps) {
+  const [detailTab, setDetailTab] = useState<'scene' | 'cuts'>('scene')
+  const [selectedCutOrder, setSelectedCutOrder] = useState<number | null>(null)
+
   if (!isOpen) {
     return null
   }
@@ -99,6 +116,172 @@ function HistoryDrawer({
     0,
     8,
   )
+  const selectedCut =
+    detailResult?.cuts.find(
+      (cut) => cut.cutOrder === (selectedCutOrder ?? detailResult.cuts[0]?.cutOrder),
+    ) ?? null
+
+  if (detailRecord) {
+    return (
+      <aside className="history-drawer" aria-label="생성 기록 상세">
+        <div className="drawer-header">
+          <h2>생성 기록 상세</h2>
+          <button aria-label="생성 기록 닫기" onClick={onClose} type="button">
+            ×
+          </button>
+        </div>
+
+        <div className="history-detail-content">
+          <div className="history-detail-summary">
+            <div className="history-detail-thumb">
+              {detailRecord.thumbnailUrl ? (
+                <img alt="" src={detailRecord.thumbnailUrl} />
+              ) : (
+                <span>이미지 없음</span>
+              )}
+            </div>
+            <div className="history-detail-meta">
+              <strong className={detailRecord.title ? '' : 'is-empty-title'}>
+                {detailRecord.title ?? '제목이 없습니다.'}
+              </strong>
+              <span>
+                {detailRecord.durationSec ?? 0}초 <i aria-hidden="true">|</i>{' '}
+                {formatCreatedAt(detailRecord.createdAt)}
+              </span>
+              <span>생성 ID: gen_{detailRecord.generationId}</span>
+            </div>
+            <em
+              className={
+                detailRecord.status === 'FAILED' ||
+                detailRecord.status === 'TIMEOUT'
+                  ? 'is-failed'
+                  : ''
+              }
+            >
+              {getStatusLabel(detailRecord.status)}
+            </em>
+          </div>
+
+          {isDetailLoading ? (
+            <div className="history-empty">생성 기록 상세를 불러오는 중입니다.</div>
+          ) : detailError ? (
+            <div className="history-empty">
+              {detailError.errorCode
+                ? `${detailError.message} (${detailError.errorCode})`
+                : detailError.message}
+            </div>
+          ) : (
+            <>
+              <section className="history-detail-section">
+                <h3>최종 결과</h3>
+                {detailResult?.resultUrl ? (
+                  <video controls src={detailResult.resultUrl} />
+                ) : (
+                  <div className="history-detail-empty">최종 영상 없음</div>
+                )}
+              </section>
+
+              <section className="history-detail-section">
+                <h3>상세 정보</h3>
+                <div className="history-detail-tabs" role="tablist">
+                  <button
+                    className={detailTab === 'scene' ? 'is-active' : ''}
+                    onClick={() => setDetailTab('scene')}
+                    type="button"
+                  >
+                    Scene
+                  </button>
+                  <button
+                    className={detailTab === 'cuts' ? 'is-active' : ''}
+                    onClick={() => setDetailTab('cuts')}
+                    type="button"
+                  >
+                    Cuts
+                  </button>
+                </div>
+                {detailTab === 'scene' && (
+                  <div className="history-detail-info">
+                    <dl>
+                      <dt>제목</dt>
+                      <dd>{detailResult?.scene.title ?? '제목이 없습니다.'}</dd>
+                      <dt>줄거리</dt>
+                      <dd>{detailResult?.scene.scenario ?? '-'}</dd>
+                    </dl>
+                  </div>
+                )}
+                {detailTab === 'cuts' && (
+                  <div className="history-detail-cuts">
+                    {detailResult?.cuts.length ? (
+                      <>
+                        <div className="cut-button-list">
+                          {detailResult.cuts.map((cut) => (
+                            <button
+                              className={
+                                selectedCut?.cutOrder === cut.cutOrder
+                                  ? 'is-active'
+                                  : ''
+                              }
+                              key={cut.cutOrder}
+                              onClick={() => setSelectedCutOrder(cut.cutOrder)}
+                              type="button"
+                            >
+                              Cut {cut.cutOrder}
+                            </button>
+                          ))}
+                        </div>
+
+                        {selectedCut && (
+                          <div className="selected-cut-detail">
+                            <div className="selected-cut-media">
+                              {selectedCut.imageUrl ? (
+                                <img
+                                  alt={`Cut ${selectedCut.cutOrder} 이미지`}
+                                  src={selectedCut.imageUrl}
+                                />
+                              ) : (
+                                <span>이미지 없음</span>
+                              )}
+                              {selectedCut.videoUrl && (
+                                <button
+                                  className="selected-cut-play"
+                                  onClick={() => onOpenVideo(selectedCut.videoUrl!)}
+                                  type="button"
+                                >
+                                  ▶ 비디오 재생
+                                </button>
+                              )}
+                            </div>
+                            <dl className="selected-cut-info">
+                              <dt>컷</dt>
+                              <dd>Cut {selectedCut.cutOrder}</dd>
+                              <dt>지속 시간</dt>
+                              <dd>{selectedCut.durationSec ?? 5}초</dd>
+                              <dt>이미지 프롬프트</dt>
+                              <dd>{selectedCut.imagePrompt}</dd>
+                              <dt>비디오 프롬프트</dt>
+                              <dd>{selectedCut.videoPrompt}</dd>
+                            </dl>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="empty-text">컷 정보가 없습니다.</p>
+                    )}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+        </div>
+
+        <div className="history-detail-footer">
+          <button onClick={onDetailBack} type="button">
+            목록으로 돌아가기
+          </button>
+        </div>
+      </aside>
+    )
+  }
 
   return (
     <aside className="history-drawer" aria-label="생성 기록">
@@ -151,7 +334,11 @@ function HistoryDrawer({
                   selectedGenerationId === item.generationId ? 'is-selected' : ''
                 }`}
                 key={item.generationId}
-                onClick={() => onSelect(item)}
+                onClick={() => {
+                  setDetailTab('scene')
+                  setSelectedCutOrder(null)
+                  onSelect(item)
+                }}
                 type="button"
               >
                 <div className="history-thumb">
