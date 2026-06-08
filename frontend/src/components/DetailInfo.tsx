@@ -7,11 +7,12 @@ import type {
 interface DetailInfoProps {
   result?: GenerationResultResponse
   status?: GenerationStatusResponse
+  onOpenVideo: (videoUrl: string) => void
 }
 
 type DetailTab = 'scene' | 'cuts' | 'logs'
 
-function DetailInfo({ result, status }: DetailInfoProps) {
+function DetailInfo({ result, status, onOpenVideo }: DetailInfoProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>('scene')
   const logs = useMemo(() => {
     const rows = []
@@ -113,9 +114,13 @@ function DetailInfo({ result, status }: DetailInfoProps) {
                     </td>
                     <td>
                       {cut.videoUrl ? (
-                        <a className="play-link" href={cut.videoUrl} target="_blank">
+                        <button
+                          className="play-link"
+                          onClick={() => onOpenVideo(cut.videoUrl!)}
+                          type="button"
+                        >
                           ▶
-                        </a>
+                        </button>
                       ) : (
                         '-'
                       )}

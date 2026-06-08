@@ -5,9 +5,15 @@ interface SceneResultProps {
   result?: GenerationResultResponse
   selectedCutOrder: number | null
   onSelectCut: (cutOrder: number) => void
+  onOpenVideo: (videoUrl: string) => void
 }
 
-function SceneResult({ result, selectedCutOrder, onSelectCut }: SceneResultProps) {
+function SceneResult({
+  result,
+  selectedCutOrder,
+  onSelectCut,
+  onOpenVideo,
+}: SceneResultProps) {
   return (
     <section className="panel result-panel">
       <h2>3. 결과</h2>
@@ -30,6 +36,7 @@ function SceneResult({ result, selectedCutOrder, onSelectCut }: SceneResultProps
 
       <CutResultList
         cuts={result?.cuts ?? []}
+        onOpenVideo={onOpenVideo}
         onSelectCut={onSelectCut}
         selectedCutOrder={selectedCutOrder}
       />

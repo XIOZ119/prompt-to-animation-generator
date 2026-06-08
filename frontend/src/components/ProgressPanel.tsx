@@ -1,7 +1,11 @@
-import type { GenerationStatusResponse } from '../types/generation'
+import type {
+  GenerationResultResponse,
+  GenerationStatusResponse,
+} from '../types/generation'
 
 interface ProgressPanelProps {
   status?: GenerationStatusResponse
+  result?: GenerationResultResponse
   isCreating: boolean
   errorMessage?: string | null
 }
@@ -18,19 +22,25 @@ const stepIndexByKey = new Map(stepLabels.map((step, index) => [step.key, index]
 const isWarningStatus = (status?: string | null) =>
   status === 'FAILED' || status === 'TIMEOUT'
 
-function ProgressPanel({ status, isCreating, errorMessage }: ProgressPanelProps) {
+function ProgressPanel({
+  status,
+  result,
+  isCreating,
+  errorMessage,
+}: ProgressPanelProps) {
   const progress = status?.progress ?? (isCreating ? 5 : 0)
   const completedStepCount = status?.completedStepCount ?? 0
   const totalStepCount = status?.totalStepCount ?? 14
   const isCompleted = status?.status === 'COMPLETED'
   const isFailed = status?.status === 'FAILED' || status?.status === 'TIMEOUT'
-  const hasImageWarning = status?.cuts?.some((cut) =>
-    isWarningStatus(cut.imageStatus),
-  )
-  const hasVideoWarning = status?.cuts?.some((cut) =>
-    isWarningStatus(cut.videoStatus),
-  )
+  const hasImageWarning =
+    status?.cuts?.some((cut) => isWarningStatus(cut.imageStatus)) ||
+    result?.cuts.some((cut) => !cut.imageUrl)
+  const hasVideoWarning =
+    status?.cuts?.some((cut) => isWarningStatus(cut.videoStatus)) ||
+    result?.cuts.some((cut) => !cut.videoUrl)
   const hasCutWarning = hasImageWarning || hasVideoWarning
+  const hasSceneResult = Boolean(result?.scene)
   const activeStepIndex = isCompleted
     ? stepLabels.length
     : stepIndexByKey.get(status?.currentStep ?? '') ?? -1
@@ -84,6 +94,8 @@ function ProgressPanel({ status, isCreating, errorMessage }: ProgressPanelProps)
                     (step.key === 'CUT_VIDEO_GENERATION' && hasVideoWarning)
                   const state = hasStepWarning
                     ? 'is-warning'
+                    : step.key === 'SCENE_GENERATION' && hasSceneResult
+                      ? 'is-done'
                     : index < activeStepIndex
                       ? 'is-done'
                       : index === activeStepIndex
@@ -95,6 +107,8 @@ function ProgressPanel({ status, isCreating, errorMessage }: ProgressPanelProps)
                       <span>
                         {hasStepWarning
                           ? '!'
+                          : step.key === 'SCENE_GENERATION' && hasSceneResult
+                            ? '✓'
                           : index < activeStepIndex
                             ? '✓'
                             : index + 1}
@@ -108,7 +122,7 @@ function ProgressPanel({ status, isCreating, errorMessage }: ProgressPanelProps)
 
             <div className="progress-summary">
               <div>
-                <span>{isCompleted ? '전체 진행률' : '현재 진행 중'}</span>
+                <span>{isCompleted ? '전체 진행률' : '생성 상태'}</span>
                 <strong>
                   {isCompleted
                     ? `${completedStepCount || totalStepCount} / ${totalStepCount} 단계`

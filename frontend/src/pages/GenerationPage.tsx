@@ -26,8 +26,10 @@ const isTerminalStatus = (status?: string) =>
 function GenerationPage() {
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
   const [generationId, setGenerationId] = useState<number | null>(null)
+  const [resultLookupId, setResultLookupId] = useState('')
   const [selectedCutOrder, setSelectedCutOrder] = useState<number | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null)
   const [histories, setHistories] = useState<GenerationHistoryItem[]>([])
   const [selectedHistoryResult, setSelectedHistoryResult] =
     useState<GenerationResultResponse>()
@@ -72,6 +74,26 @@ function GenerationPage() {
     enabled: generationId !== null && shouldFetchResult,
   })
 
+  const previousResultMutation = useMutation({
+    mutationFn: fetchGenerationResult,
+    onSuccess: (data, requestedGenerationId) => {
+      setGenerationId(requestedGenerationId)
+      setSelectedHistoryResult(data)
+      setSelectedHistoryStatus(undefined)
+      setSelectedCutOrder(data.cuts[0]?.cutOrder ?? null)
+      setHistories((current) =>
+        current.map((item) =>
+          item.generationId === requestedGenerationId
+            ? {
+                ...item,
+                result: data,
+              }
+            : item,
+        ),
+      )
+    },
+  })
+
   const activeResult = selectedHistoryResult || resultQuery.data
   const activeStatus = selectedHistoryStatus || statusQuery.data
   const effectiveSelectedCutOrder =
@@ -94,6 +116,7 @@ function GenerationPage() {
     (createMutation.error as ApiError | null)?.message ||
     (statusQuery.error as ApiError | null)?.message ||
     (resultQuery.error as ApiError | null)?.message ||
+    (previousResultMutation.error as ApiError | null)?.message ||
     null
 
   const displayError = useMemo(() => {
@@ -101,6 +124,7 @@ function GenerationPage() {
       createMutation.error as ApiError | null,
       statusQuery.error as ApiError | null,
       resultQuery.error as ApiError | null,
+      previousResultMutation.error as ApiError | null,
     ].filter(Boolean) as ApiError[]
 
     if (!errors.length) {
@@ -110,7 +134,12 @@ function GenerationPage() {
     return errors.map((error) =>
       error.errorCode ? `${error.message} (${error.errorCode})` : error.message,
     )[0]
-  }, [createMutation.error, resultQuery.error, statusQuery.error])
+  }, [
+    createMutation.error,
+    previousResultMutation.error,
+    resultQuery.error,
+    statusQuery.error,
+  ])
 
   const handleCreate = () => {
     createMutation.mutate(prompt.trim())
@@ -123,18 +152,53 @@ function GenerationPage() {
     setSelectedCutOrder(history.result?.cuts[0]?.cutOrder ?? null)
   }
 
+  const handleFetchResultById = () => {
+    const targetGenerationId = Number(resultLookupId)
+
+    if (Number.isInteger(targetGenerationId) && targetGenerationId > 0) {
+      previousResultMutation.mutate(targetGenerationId)
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
         <h1>AI 애니메이션 생성기</h1>
-        <button
-          className="history-button"
-          onClick={() => setHistoryOpen(true)}
-          type="button"
-        >
-          <span aria-hidden="true">↻</span>
-          생성 기록
-        </button>
+        <div className="header-actions">
+          <label className="sr-only" htmlFor="result-lookup-id">
+            결과 조회 generationId
+          </label>
+          <input
+            className="result-lookup-input"
+            id="result-lookup-id"
+            inputMode="numeric"
+            min="1"
+            onChange={(event) => setResultLookupId(event.target.value)}
+            placeholder="generationId"
+            type="number"
+            value={resultLookupId}
+          />
+          <button
+            className="history-button"
+            disabled={
+              previousResultMutation.isPending ||
+              !Number.isInteger(Number(resultLookupId)) ||
+              Number(resultLookupId) <= 0
+            }
+            onClick={handleFetchResultById}
+            type="button"
+          >
+            결과 조회
+          </button>
+          <button
+            className="history-button"
+            onClick={() => setHistoryOpen(true)}
+            type="button"
+          >
+            <span aria-hidden="true">↻</span>
+            생성 기록
+          </button>
+        </div>
       </header>
 
       <div className="app-grid">
@@ -151,17 +215,23 @@ function GenerationPage() {
           <ProgressPanel
             errorMessage={displayError}
             isCreating={createMutation.isPending}
+            result={activeResult}
             status={activeStatus}
           />
         </div>
 
         <div className="right-column">
           <SceneResult
+            onOpenVideo={setVideoModalUrl}
             onSelectCut={setSelectedCutOrder}
             result={activeResult}
             selectedCutOrder={effectiveSelectedCutOrder}
           />
-          <DetailInfo result={activeResult} status={activeStatus} />
+          <DetailInfo
+            onOpenVideo={setVideoModalUrl}
+            result={activeResult}
+            status={activeStatus}
+          />
         </div>
       </div>
 
@@ -174,6 +244,32 @@ function GenerationPage() {
         onSelect={handleSelectHistory}
         selectedGenerationId={generationId}
       />
+
+      {videoModalUrl && (
+        <div
+          className="video-modal-backdrop"
+          onClick={() => setVideoModalUrl(null)}
+          role="presentation"
+        >
+          <div
+            className="video-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="컷 비디오 재생"
+          >
+            <button
+              aria-label="비디오 닫기"
+              className="video-modal-close"
+              onClick={() => setVideoModalUrl(null)}
+              type="button"
+            >
+              ×
+            </button>
+            <video controls src={videoModalUrl} />
+          </div>
+        </div>
+      )}
     </main>
   )
 }
