@@ -11,6 +11,7 @@ import org.sieun.prompt2animation.client.kie.dto.TaskCreateResponse;
 import org.sieun.prompt2animation.client.kie.dto.VideoCreateRequest;
 
 import java.util.List;
+import org.sieun.prompt2animation.util.RetryUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -33,23 +34,27 @@ public class KieClient {
     private String videoModel;
 
     public String generateImage(String imagePrompt) {
-        try {
-            String taskId = createTask(imagePrompt);
-            return pollForResult(taskId);
-        } catch (Exception e) {
-            log.error("[Kie] 이미지 생성 실패 - prompt: {}, error: {}", imagePrompt, e.getMessage(), e);
-            throw new RuntimeException("Kie 이미지 생성 실패: " + e.getMessage(), e);
-        }
+        return RetryUtil.execute(3, 1000, "Kie 이미지 생성", () -> {
+            try {
+                String taskId = createTask(imagePrompt);
+                return pollForResult(taskId);
+            } catch (Exception e) {
+                log.error("[Kie] 이미지 생성 실패 - prompt: {}, error: {}", imagePrompt, e.getMessage());
+                throw new RuntimeException("Kie 이미지 생성 실패: " + e.getMessage(), e);
+            }
+        });
     }
 
     public String generateVideo(String videoPrompt, String imageUrl, Integer durationSec) {
-        try {
-            String taskId = createVideoTask(videoPrompt, imageUrl, durationSec);
-            return pollForResult(taskId);
-        } catch (Exception e) {
-            log.error("[Kie] 비디오 생성 실패 - prompt: {}, imageUrl: {}, error: {}", videoPrompt, imageUrl, e.getMessage(), e);
-            throw new RuntimeException("Kie 비디오 생성 실패: " + e.getMessage(), e);
-        }
+        return RetryUtil.execute(3, 1000, "Kie 비디오 생성", () -> {
+            try {
+                String taskId = createVideoTask(videoPrompt, imageUrl, durationSec);
+                return pollForResult(taskId);
+            } catch (Exception e) {
+                log.error("[Kie] 비디오 생성 실패 - prompt: {}, imageUrl: {}, error: {}", videoPrompt, imageUrl, e.getMessage());
+                throw new RuntimeException("Kie 비디오 생성 실패: " + e.getMessage(), e);
+            }
+        });
     }
 
     private String createVideoTask(String videoPrompt, String imageUrl, Integer durationSec) {

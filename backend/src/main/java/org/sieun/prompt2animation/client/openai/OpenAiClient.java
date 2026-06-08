@@ -8,6 +8,7 @@ import org.sieun.prompt2animation.client.openai.dto.ChatRequest.Message;
 import org.sieun.prompt2animation.client.openai.dto.ChatRequest.ResponseFormat;
 import org.sieun.prompt2animation.client.openai.dto.ChatResponse;
 import org.sieun.prompt2animation.client.openai.dto.SceneGenerationResult;
+import org.sieun.prompt2animation.util.RetryUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -48,27 +49,29 @@ public class OpenAiClient {
     private String model;
 
     public SceneGenerationResult generateScene(String userPrompt) {
-        try {
-            ChatRequest request = new ChatRequest(
-                    model,
-                    List.of(
-                            new Message("system", SCENE_SYSTEM_PROMPT),
-                            new Message("user", userPrompt)
-                    ),
-                    ResponseFormat.jsonObject()
-            );
+        return RetryUtil.execute(3, 1000, "OpenAI Scene 생성", () -> {
+            try {
+                ChatRequest request = new ChatRequest(
+                        model,
+                        List.of(
+                                new Message("system", SCENE_SYSTEM_PROMPT),
+                                new Message("user", userPrompt)
+                        ),
+                        ResponseFormat.jsonObject()
+                );
 
-            ChatResponse response = openAiRestClient.post()
-                    .uri("/chat/completions")
-                    .body(request)
-                    .retrieve()
-                    .body(ChatResponse.class);
+                ChatResponse response = openAiRestClient.post()
+                        .uri("/chat/completions")
+                        .body(request)
+                        .retrieve()
+                        .body(ChatResponse.class);
 
-            String content = response.choices().get(0).message().content();
-            return OBJECT_MAPPER.readValue(content, SceneGenerationResult.class);
-        } catch (Exception e) {
-            log.error("[OpenAI] Scene 생성 실패 - prompt: {}, error: {}", userPrompt, e.getMessage(), e);
-            throw new RuntimeException("OpenAI Scene 생성 실패: " + e.getMessage(), e);
-        }
+                String content = response.choices().get(0).message().content();
+                return OBJECT_MAPPER.readValue(content, SceneGenerationResult.class);
+            } catch (Exception e) {
+                log.error("[OpenAI] Scene 생성 실패 - prompt: {}, error: {}", userPrompt, e.getMessage());
+                throw new RuntimeException("OpenAI Scene 생성 실패: " + e.getMessage(), e);
+            }
+        });
     }
 }
