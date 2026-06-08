@@ -19,7 +19,7 @@ public class CutVideo extends BaseEntity {
     private Cut cut;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cut_image_id", nullable = false)
+    @JoinColumn(name = "cut_image_id", nullable = true)
     private CutImage cutImage;
 
     @Enumerated(EnumType.STRING)
