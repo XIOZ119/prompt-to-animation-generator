@@ -91,6 +91,7 @@ public class GenerationWorkflowProcessor {
                     .orElse(null);
 
             if (cutImage == null) {
+                cutVideoRepository.save(CutVideo.createFailed(cut, "이미지 생성 실패로 비디오 생성 건너뜀"));
                 continue;
             }
 

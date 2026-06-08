@@ -38,6 +38,14 @@ public class CutVideo extends BaseEntity {
         return cutVideo;
     }
 
+    public static CutVideo createFailed(Cut cut, String errorMessage) {
+        CutVideo cutVideo = new CutVideo();
+        cutVideo.cut = cut;
+        cutVideo.status = GenerationStatus.FAILED;
+        cutVideo.errorMessage = errorMessage;
+        return cutVideo;
+    }
+
     public void markProcessing() {
         this.status = GenerationStatus.PROCESSING;
     }
