@@ -33,7 +33,16 @@ public class KieClient {
     @Value("${kie.video-model}")
     private String videoModel;
 
+    @Value("${app.mock-mode:false}")
+    private boolean mockMode;
+
+    private static final String MOCK_VIDEO_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+
     public String generateImage(String imagePrompt) {
+        if (mockMode) {
+            log.info("[Mock] 이미지 생성 - prompt: {}", imagePrompt);
+            return "https://picsum.photos/seed/" + Math.abs(imagePrompt.hashCode()) + "/512/512";
+        }
         return RetryUtil.execute(3, 1000, "Kie 이미지 생성", () -> {
             try {
                 String taskId = createTask(imagePrompt);
@@ -46,6 +55,10 @@ public class KieClient {
     }
 
     public String generateVideo(String videoPrompt, String imageUrl, Integer durationSec) {
+        if (mockMode) {
+            log.info("[Mock] 비디오 생성 - prompt: {}", videoPrompt);
+            return MOCK_VIDEO_URL;
+        }
         return RetryUtil.execute(3, 1000, "Kie 비디오 생성", () -> {
             try {
                 String taskId = createVideoTask(videoPrompt, imageUrl, durationSec);

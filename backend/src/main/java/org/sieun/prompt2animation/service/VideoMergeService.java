@@ -1,5 +1,6 @@
 package org.sieun.prompt2animation.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class VideoMergeService {
 
@@ -23,7 +25,16 @@ public class VideoMergeService {
     @Value("${app.base-url}")
     private String baseUrl;
 
+    @Value("${app.mock-mode:false}")
+    private boolean mockMode;
+
+    private static final String MOCK_RESULT_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+
     public String merge(Long generationId, List<String> videoUrls) {
+        if (mockMode) {
+            log.info("[Mock] 영상 병합 건너뜀 - generationId: {}", generationId);
+            return MOCK_RESULT_URL;
+        }
         Path tempDir;
         try {
             tempDir = Files.createTempDirectory("merge_" + generationId + "_");

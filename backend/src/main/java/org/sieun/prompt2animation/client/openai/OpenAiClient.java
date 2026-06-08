@@ -7,6 +7,7 @@ import org.sieun.prompt2animation.client.openai.dto.ChatRequest;
 import org.sieun.prompt2animation.client.openai.dto.ChatRequest.Message;
 import org.sieun.prompt2animation.client.openai.dto.ChatRequest.ResponseFormat;
 import org.sieun.prompt2animation.client.openai.dto.ChatResponse;
+import org.sieun.prompt2animation.client.openai.dto.CutGenerationResult;
 import org.sieun.prompt2animation.client.openai.dto.SceneGenerationResult;
 import org.sieun.prompt2animation.util.RetryUtil;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,7 +49,24 @@ public class OpenAiClient {
     @Value("${openai.model}")
     private String model;
 
+    @Value("${app.mock-mode:false}")
+    private boolean mockMode;
+
     public SceneGenerationResult generateScene(String userPrompt) {
+        if (mockMode) {
+            log.info("[Mock] Scene 생성 - prompt: {}", userPrompt);
+            return new SceneGenerationResult(
+                    "숲 속 곰의 꿀 탐험",
+                    "귀여운 곰이 숲을 걸어다니며 꿀을 찾아 맛있게 먹는 애니메이션",
+                    "children's animation style, soft pastel colors, warm lighting",
+                    List.of(
+                            new CutGenerationResult(1, "A cute bear walking through a colorful forest", "The bear walks slowly, looking around curiously", 5),
+                            new CutGenerationResult(2, "The bear discovers a beehive hanging on a tree branch", "Camera slowly zooms in on the bear's surprised expression", 5),
+                            new CutGenerationResult(3, "The bear reaches up with its paw to grab the honey", "The bear's paw moves toward the hive, bees buzzing around", 10),
+                            new CutGenerationResult(4, "The bear sits down and eats honey happily", "The bear licks honey off its paw with a big smile", 10)
+                    )
+            );
+        }
         return RetryUtil.execute(3, 1000, "OpenAI Scene 생성", () -> {
             try {
                 ChatRequest request = new ChatRequest(
