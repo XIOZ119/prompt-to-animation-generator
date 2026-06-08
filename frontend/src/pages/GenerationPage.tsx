@@ -64,12 +64,12 @@ function GenerationPage() {
     },
   })
 
-  const isCompleted = statusQuery.data?.status === 'COMPLETED'
+  const shouldFetchResult = isTerminalStatus(statusQuery.data?.status)
 
   const resultQuery = useQuery({
     queryKey: ['generation-result', generationId],
     queryFn: () => fetchGenerationResult(generationId!),
-    enabled: generationId !== null && isCompleted,
+    enabled: generationId !== null && shouldFetchResult,
   })
 
   const activeResult = selectedHistoryResult || resultQuery.data
