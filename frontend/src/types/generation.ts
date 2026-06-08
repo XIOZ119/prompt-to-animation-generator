@@ -2,7 +2,8 @@ export type GenerationStatus =
   | "PENDING"
   | "PROCESSING"
   | "COMPLETED"
-  | "FAILED";
+  | "FAILED"
+  | "TIMEOUT";
 
 export type CurrentStep =
   | "SCENE_GENERATION"
@@ -39,6 +40,13 @@ export interface GenerationStatusResponse {
   completedStepCount?: number;
   totalStepCount?: number;
   errorMessage?: string | null;
+  cuts?: GenerationStatusCut[];
+}
+
+export interface GenerationStatusCut {
+  cutOrder: number;
+  imageStatus: GenerationStatus | null;
+  videoStatus: GenerationStatus | null;
 }
 
 export interface Scene {

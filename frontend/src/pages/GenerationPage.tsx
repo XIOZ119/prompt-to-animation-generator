@@ -20,6 +20,9 @@ import type {
 const DEFAULT_PROMPT =
   '숲 속에서 곰이 꿀을 발견하고\n맛있게 먹는 30초 애니메이션을 만들어줘.'
 
+const isTerminalStatus = (status?: string) =>
+  status === 'COMPLETED' || status === 'FAILED' || status === 'TIMEOUT'
+
 function GenerationPage() {
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
   const [generationId, setGenerationId] = useState<number | null>(null)
@@ -57,7 +60,7 @@ function GenerationPage() {
     refetchInterval: (query) => {
       const status = query.state.data?.status
 
-      return status === 'COMPLETED' || status === 'FAILED' ? false : 3000
+      return isTerminalStatus(status) ? false : 3000
     },
   })
 
@@ -139,9 +142,7 @@ function GenerationPage() {
           <PromptForm
             isSubmitting={
               createMutation.isPending ||
-              (!!activeStatus &&
-                activeStatus.status !== 'COMPLETED' &&
-                activeStatus.status !== 'FAILED')
+              (!!activeStatus && !isTerminalStatus(activeStatus.status))
             }
             onPromptChange={setPrompt}
             onSubmit={handleCreate}

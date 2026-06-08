@@ -15,12 +15,22 @@ const stepLabels = [
 
 const stepIndexByKey = new Map(stepLabels.map((step, index) => [step.key, index]))
 
+const isWarningStatus = (status?: string | null) =>
+  status === 'FAILED' || status === 'TIMEOUT'
+
 function ProgressPanel({ status, isCreating, errorMessage }: ProgressPanelProps) {
   const progress = status?.progress ?? (isCreating ? 5 : 0)
   const completedStepCount = status?.completedStepCount ?? 0
   const totalStepCount = status?.totalStepCount ?? 14
   const isCompleted = status?.status === 'COMPLETED'
-  const isFailed = status?.status === 'FAILED'
+  const isFailed = status?.status === 'FAILED' || status?.status === 'TIMEOUT'
+  const hasImageWarning = status?.cuts?.some((cut) =>
+    isWarningStatus(cut.imageStatus),
+  )
+  const hasVideoWarning = status?.cuts?.some((cut) =>
+    isWarningStatus(cut.videoStatus),
+  )
+  const hasCutWarning = hasImageWarning || hasVideoWarning
   const activeStepIndex = isCompleted
     ? stepLabels.length
     : stepIndexByKey.get(status?.currentStep ?? '') ?? -1
@@ -29,15 +39,31 @@ function ProgressPanel({ status, isCreating, errorMessage }: ProgressPanelProps)
     <section className="panel status-panel">
       <h2>2. 생성 상태</h2>
 
-      <div className={`status-card ${isFailed ? 'is-failed' : ''}`}>
+      <div
+        className={`status-card ${isFailed ? 'is-failed' : ''} ${
+          hasCutWarning ? 'is-warning' : ''
+        }`}
+      >
         {status || isCreating ? (
           <>
             <div className="status-heading">
               <span className="status-mark" aria-hidden="true">
-                {isFailed ? '!' : isCompleted ? '✓' : activeStepIndex + 1 || '...'}
+                {hasCutWarning
+                  ? '!'
+                  : isFailed
+                    ? '!'
+                    : isCompleted
+                      ? '✓'
+                      : activeStepIndex + 1 || '...'}
               </span>
               <strong>
-                {isFailed ? '실패' : isCompleted ? '완료' : status?.status || '요청 중'}
+                {isFailed
+                  ? status?.status === 'TIMEOUT'
+                    ? '시간 초과'
+                    : '실패'
+                  : isCompleted
+                    ? '완료'
+                    : status?.status || '요청 중'}
               </strong>
               {!isCompleted && !isFailed && (
                 <span className="status-pill">PROCESSING</span>
@@ -50,11 +76,15 @@ function ProgressPanel({ status, isCreating, errorMessage }: ProgressPanelProps)
               </p>
             )}
 
-            {!isCompleted && !isFailed && (
+            {!isCompleted && (
               <ol className="stepper" aria-label="생성 단계">
                 {stepLabels.map((step, index) => {
-                  const state =
-                    index < activeStepIndex
+                  const hasStepWarning =
+                    (step.key === 'CUT_IMAGE_GENERATION' && hasImageWarning) ||
+                    (step.key === 'CUT_VIDEO_GENERATION' && hasVideoWarning)
+                  const state = hasStepWarning
+                    ? 'is-warning'
+                    : index < activeStepIndex
                       ? 'is-done'
                       : index === activeStepIndex
                         ? 'is-active'
@@ -62,7 +92,13 @@ function ProgressPanel({ status, isCreating, errorMessage }: ProgressPanelProps)
 
                   return (
                     <li className={state} key={step.key}>
-                      <span>{index < activeStepIndex ? '✓' : index + 1}</span>
+                      <span>
+                        {hasStepWarning
+                          ? '!'
+                          : index < activeStepIndex
+                            ? '✓'
+                            : index + 1}
+                      </span>
                       <b>{step.label}</b>
                     </li>
                   )

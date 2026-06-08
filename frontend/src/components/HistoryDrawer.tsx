@@ -82,12 +82,25 @@ function HistoryDrawer({
                 <span>
                   30초 <i aria-hidden="true">|</i> {formatCreatedAt(history.createdAt)}
                 </span>
-                {history.status === 'FAILED' && (
-                  <small>{history.statusDetail?.errorMessage || '생성 실패'}</small>
+                {(history.status === 'FAILED' || history.status === 'TIMEOUT') && (
+                  <small>
+                    {history.statusDetail?.errorMessage ||
+                      (history.status === 'TIMEOUT' ? '시간 초과' : '생성 실패')}
+                  </small>
                 )}
               </div>
-              <em className={history.status === 'FAILED' ? 'is-failed' : ''}>
-                {history.status === 'FAILED' ? '실패' : '완료'}
+              <em
+                className={
+                  history.status === 'FAILED' || history.status === 'TIMEOUT'
+                    ? 'is-failed'
+                    : ''
+                }
+              >
+                {history.status === 'FAILED'
+                  ? '실패'
+                  : history.status === 'TIMEOUT'
+                    ? '시간 초과'
+                    : '완료'}
               </em>
               <span className="chevron" aria-hidden="true">
                 ›
