@@ -83,7 +83,7 @@
 
 .detail-panel {
   display: flex;
-  flex: 0 0 320px;
+  flex: 0 0 420px;
   flex-direction: column;
 }
 
@@ -135,7 +135,6 @@ textarea {
 }
 
 .primary-button,
-.download-button,
 .history-button {
   align-items: center;
   border-radius: 6px;
@@ -160,16 +159,6 @@ textarea {
 .primary-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
-}
-
-.download-button {
-  background: #ffffff;
-  border: 1px solid #cfd7e6;
-  color: #07142e;
-  height: 38px;
-  margin: 12px 0 16px;
-  text-decoration: none;
-  width: 100%;
 }
 
 .history-button {
@@ -569,7 +558,7 @@ textarea {
   border-radius: 6px;
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .table-wrap {
@@ -592,6 +581,93 @@ textarea {
 .scene-info dd {
   color: #263653;
   margin: 0;
+}
+
+.cut-detail-box {
+  max-height: 100%;
+  padding: 14px;
+}
+
+.cut-button-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.cut-button-list button {
+  background: #ffffff;
+  border: 1px solid #cfd7e6;
+  border-radius: 6px;
+  color: #07142e;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 8px 14px;
+}
+
+.cut-button-list button.is-active {
+  background: #0b6dff;
+  border-color: #0b6dff;
+  color: #ffffff;
+}
+
+.selected-cut-detail {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.selected-cut-media {
+  align-content: start;
+  display: grid;
+  gap: 10px;
+}
+
+.selected-cut-media img,
+.selected-cut-media span {
+  aspect-ratio: 16 / 9;
+  background: #eef2f7;
+  border-radius: 6px;
+  color: #667794;
+  display: flex;
+  object-fit: cover;
+  width: 100%;
+}
+
+.selected-cut-media span {
+  align-items: center;
+  justify-content: center;
+}
+
+.selected-cut-play {
+  background: #ffffff;
+  border: 1px solid #0b6dff;
+  border-radius: 6px;
+  color: #0b6dff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 9px 12px;
+}
+
+.selected-cut-info {
+  display: grid;
+  gap: 8px 16px;
+  grid-template-columns: 100px minmax(0, 1fr);
+  margin: 0;
+}
+
+.selected-cut-info dt {
+  color: #07142e;
+  font-weight: 800;
+}
+
+.selected-cut-info dd {
+  color: #263653;
+  margin: 0;
+  word-break: break-word;
 }
 
 table {
@@ -946,6 +1022,11 @@ th {
   }
 
   .scene-info {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-cut-detail,
+  .selected-cut-info {
     grid-template-columns: 1fr;
   }
 }

@@ -1,40 +1,20 @@
-import { useMemo, useState } from 'react'
-import type {
-  GenerationResultResponse,
-  GenerationStatusResponse,
-} from '../types/generation'
+import { useState } from 'react'
+import type { GenerationResultResponse } from '../types/generation'
 
 interface DetailInfoProps {
   result?: GenerationResultResponse
-  status?: GenerationStatusResponse
   onOpenVideo: (videoUrl: string) => void
 }
 
-type DetailTab = 'scene' | 'cuts' | 'logs'
+type DetailTab = 'scene' | 'cuts'
 
-function DetailInfo({ result, status, onOpenVideo }: DetailInfoProps) {
+function DetailInfo({ result, onOpenVideo }: DetailInfoProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>('scene')
-  const logs = useMemo(() => {
-    const rows = []
-
-    if (status) {
-      rows.push({
-        time: '-',
-        step: status.currentStepMessage || status.currentStep,
-        detail: `진행률 ${status.progress}%`,
-      })
-    }
-
-    result?.cuts.forEach((cut) => {
-      rows.push({
-        time: '-',
-        step: `Cut ${cut.cutOrder} 생성 완료`,
-        detail: cut.videoPrompt || cut.imagePrompt,
-      })
-    })
-
-    return rows
-  }, [result, status])
+  const [selectedCutOrder, setSelectedCutOrder] = useState<number | null>(null)
+  const selectedCut =
+    result?.cuts.find(
+      (cut) => cut.cutOrder === (selectedCutOrder ?? result.cuts[0]?.cutOrder),
+    ) ?? null
 
   return (
     <section className="panel detail-panel">
@@ -57,14 +37,6 @@ function DetailInfo({ result, status, onOpenVideo }: DetailInfoProps) {
         >
           Cuts
         </button>
-        <button
-          className={activeTab === 'logs' ? 'is-active' : ''}
-          onClick={() => setActiveTab('logs')}
-          role="tab"
-          type="button"
-        >
-          생성 로그
-        </button>
       </div>
 
       {activeTab === 'scene' && (
@@ -83,81 +55,60 @@ function DetailInfo({ result, status, onOpenVideo }: DetailInfoProps) {
       )}
 
       {activeTab === 'cuts' && (
-        <div className="table-wrap">
+        <div className="detail-box cut-detail-box">
           {result?.cuts.length ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>컷</th>
-                  <th>지속 시간</th>
-                  <th>이미지 프롬프트</th>
-                  <th>이미지</th>
-                  <th>비디오</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              <div className="cut-button-list">
                 {result.cuts.map((cut) => (
-                  <tr key={cut.cutOrder}>
-                    <td>Cut {cut.cutOrder}</td>
-                    <td>{cut.durationSec ?? 5}초</td>
-                    <td>{cut.imagePrompt}</td>
-                    <td>
-                      {cut.imageUrl ? (
-                        <img
-                          alt={`Cut ${cut.cutOrder} 이미지`}
-                          className="table-thumb"
-                          src={cut.imageUrl}
-                        />
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td>
-                      {cut.videoUrl ? (
-                        <button
-                          className="play-link"
-                          onClick={() => onOpenVideo(cut.videoUrl!)}
-                          type="button"
-                        >
-                          ▶
-                        </button>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                  </tr>
+                  <button
+                    className={
+                      selectedCut?.cutOrder === cut.cutOrder ? 'is-active' : ''
+                    }
+                    key={cut.cutOrder}
+                    onClick={() => setSelectedCutOrder(cut.cutOrder)}
+                    type="button"
+                  >
+                    Cut {cut.cutOrder}
+                  </button>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {selectedCut && (
+                <div className="selected-cut-detail">
+                  <div className="selected-cut-media">
+                    {selectedCut.imageUrl ? (
+                      <img
+                        alt={`Cut ${selectedCut.cutOrder} 이미지`}
+                        src={selectedCut.imageUrl}
+                      />
+                    ) : (
+                      <span>이미지 없음</span>
+                    )}
+                    {selectedCut.videoUrl && (
+                      <button
+                        className="selected-cut-play"
+                        onClick={() => onOpenVideo(selectedCut.videoUrl!)}
+                        type="button"
+                      >
+                        ▶ 비디오 재생
+                      </button>
+                    )}
+                  </div>
+                  <dl className="selected-cut-info">
+                    <dt>컷</dt>
+                    <dd>Cut {selectedCut.cutOrder}</dd>
+                    <dt>지속 시간</dt>
+                    <dd>{selectedCut.durationSec ?? 5}초</dd>
+                    <dt>이미지 프롬프트</dt>
+                    <dd>{selectedCut.imagePrompt}</dd>
+                    <dt>비디오 프롬프트</dt>
+                    <dd>{selectedCut.videoPrompt}</dd>
+                  </dl>
+                </div>
+              )}
+            </>
           ) : (
             <p className="empty-text">완료 후 컷 정보가 표시됩니다.</p>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'logs' && (
-        <div className="table-wrap">
-          {logs.length ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>시간</th>
-                  <th>단계</th>
-                  <th>상세 내용</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log, index) => (
-                  <tr key={`${log.step}-${index}`}>
-                    <td>{log.time}</td>
-                    <td>{log.step}</td>
-                    <td>{log.detail}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="empty-text">생성 상태를 조회하면 로그가 표시됩니다.</p>
           )}
         </div>
       )}

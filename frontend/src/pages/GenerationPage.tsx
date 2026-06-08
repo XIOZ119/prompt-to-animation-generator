@@ -27,7 +27,6 @@ function GenerationPage() {
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
   const [generationId, setGenerationId] = useState<number | null>(null)
   const [resultLookupId, setResultLookupId] = useState('')
-  const [selectedCutOrder, setSelectedCutOrder] = useState<number | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null)
   const [histories, setHistories] = useState<GenerationHistoryItem[]>([])
@@ -40,7 +39,6 @@ function GenerationPage() {
     mutationFn: createGeneration,
     onSuccess: (data) => {
       setGenerationId(data.generationId)
-      setSelectedCutOrder(null)
       setSelectedHistoryResult(undefined)
       setSelectedHistoryStatus(undefined)
       setHistories((current) => [
@@ -80,7 +78,6 @@ function GenerationPage() {
       setGenerationId(requestedGenerationId)
       setSelectedHistoryResult(data)
       setSelectedHistoryStatus(undefined)
-      setSelectedCutOrder(data.cuts[0]?.cutOrder ?? null)
       setHistories((current) =>
         current.map((item) =>
           item.generationId === requestedGenerationId
@@ -96,8 +93,6 @@ function GenerationPage() {
 
   const activeResult = selectedHistoryResult || resultQuery.data
   const activeStatus = selectedHistoryStatus || statusQuery.data
-  const effectiveSelectedCutOrder =
-    selectedCutOrder ?? activeResult?.cuts[0]?.cutOrder ?? null
   const displayHistories = useMemo(
     () =>
       histories.map((item) =>
@@ -149,7 +144,6 @@ function GenerationPage() {
     setGenerationId(history.generationId)
     setSelectedHistoryResult(history.result)
     setSelectedHistoryStatus(history.statusDetail)
-    setSelectedCutOrder(history.result?.cuts[0]?.cutOrder ?? null)
   }
 
   const handleFetchResultById = () => {
@@ -222,15 +216,11 @@ function GenerationPage() {
 
         <div className="right-column">
           <SceneResult
-            onOpenVideo={setVideoModalUrl}
-            onSelectCut={setSelectedCutOrder}
             result={activeResult}
-            selectedCutOrder={effectiveSelectedCutOrder}
           />
           <DetailInfo
             onOpenVideo={setVideoModalUrl}
             result={activeResult}
-            status={activeStatus}
           />
         </div>
       </div>
