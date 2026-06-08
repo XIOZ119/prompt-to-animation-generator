@@ -44,13 +44,15 @@ const formatCreatedAt = (createdAt?: string) => {
     return '-'
   }
 
-  const date = new Date(createdAt)
+  const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(createdAt)
+  const date = new Date(hasTimezone ? createdAt : `${createdAt}Z`)
 
   if (Number.isNaN(date.getTime())) {
     return createdAt
   }
 
   return date.toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
