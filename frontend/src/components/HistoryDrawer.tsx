@@ -148,7 +148,6 @@ function HistoryDrawer({
                 {detailRecord.durationSec ?? 0}초 <i aria-hidden="true">|</i>{' '}
                 {formatCreatedAt(detailRecord.createdAt)}
               </span>
-              <span>생성 ID: gen_{detailRecord.generationId}</span>
             </div>
             <em
               className={
