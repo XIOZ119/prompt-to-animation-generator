@@ -20,15 +20,35 @@ import type {
   GenerationStatusResponse,
 } from '../types/generation'
 
-const DEFAULT_PROMPT =
-  '숲 속에서 곰이 꿀을 발견하고\n맛있게 먹는 30초 애니메이션을 만들어줘.'
+const DEFAULT_PROMPT = ''
+const LATEST_GENERATION_ID_STORAGE_KEY = 'latestGenerationId'
 
 const isTerminalStatus = (status?: string) =>
   status === 'COMPLETED' || status === 'FAILED' || status === 'TIMEOUT'
 
+const getStoredGenerationId = () => {
+  const storedGenerationId = window.localStorage.getItem(
+    LATEST_GENERATION_ID_STORAGE_KEY,
+  )
+  const parsedGenerationId = Number(storedGenerationId)
+
+  return Number.isInteger(parsedGenerationId) && parsedGenerationId > 0
+    ? parsedGenerationId
+    : null
+}
+
+const storeGenerationId = (generationId: number) => {
+  window.localStorage.setItem(
+    LATEST_GENERATION_ID_STORAGE_KEY,
+    String(generationId),
+  )
+}
+
 function GenerationPage() {
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
-  const [generationId, setGenerationId] = useState<number | null>(null)
+  const [generationId, setGenerationId] = useState<number | null>(
+    getStoredGenerationId,
+  )
   const [resultLookupId, setResultLookupId] = useState('')
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyPage, setHistoryPage] = useState(0)
@@ -47,6 +67,7 @@ function GenerationPage() {
     mutationFn: createGeneration,
     onSuccess: (data) => {
       setGenerationId(data.generationId)
+      storeGenerationId(data.generationId)
       setSelectedHistoryResult(undefined)
       setSelectedHistoryStatus(undefined)
     },
@@ -98,6 +119,7 @@ function GenerationPage() {
     mutationFn: fetchGenerationResult,
     onSuccess: (data, requestedGenerationId) => {
       setGenerationId(requestedGenerationId)
+      storeGenerationId(requestedGenerationId)
       setSelectedHistoryResult(data)
       setSelectedHistoryStatus(undefined)
     },

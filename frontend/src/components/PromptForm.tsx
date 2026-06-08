@@ -43,7 +43,7 @@ function PromptForm({
             id="prompt"
             maxLength={MAX_PROMPT_LENGTH + 100}
             onChange={(event) => onPromptChange(event.target.value)}
-            placeholder="예: 숲 속에서 곰이 꿀을 발견하고 맛있게 먹는 30초 애니메이션을 만들어줘."
+            placeholder="예: 숲 속에서 곰이 꿀을 발견하고 맛있게 먹는 애니메이션을 만들어줘."
             value={prompt}
           />
           <span className="character-count">
