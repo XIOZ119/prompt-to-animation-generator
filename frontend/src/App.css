@@ -78,13 +78,15 @@
 }
 
 .result-panel {
-  flex: 0 0 auto;
+  flex: 0 0 460px;
+  overflow: hidden;
 }
 
 .detail-panel {
   display: flex;
   flex: 0 0 420px;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .section-help {
@@ -393,17 +395,16 @@ textarea {
 }
 
 .result-video {
-  aspect-ratio: 16 / 9;
   background: #06101f;
   border-radius: 6px;
   display: block;
+  height: 360px;
   object-fit: contain;
   width: 100%;
 }
 
 .result-empty {
   align-items: center;
-  aspect-ratio: 16 / 9;
   background: #f6f8fc;
   border: 1px dashed #cfd7e6;
   border-radius: 6px;
@@ -411,6 +412,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  height: 360px;
   justify-content: center;
 }
 
@@ -1206,6 +1208,11 @@ th {
   .detail-panel {
     flex: initial;
   }
+
+  .result-video,
+  .result-empty {
+    height: 320px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1224,6 +1231,11 @@ th {
 
   .panel {
     padding: 18px;
+  }
+
+  .result-video,
+  .result-empty {
+    height: 220px;
   }
 
   .cut-strip {
