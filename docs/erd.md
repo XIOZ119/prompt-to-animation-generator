@@ -8,7 +8,13 @@ Prompt-to-Animation Generator는 사용자의 자연어 프롬프트를 기반�
 
 ## 엔티티 관계
 
-text Generation : Scene = 1 : 1  Scene : Cut = 1 : N  Cut : CutImage = 1 : N  Cut : CutVideo = 1 : N  CutImage : CutVideo = 1 : N
+```
+Generation : Scene  = 1 : 1
+Scene      : Cut    = 1 : N
+Cut        : CutImage = 1 : N
+Cut        : CutVideo = 1 : N
+CutImage   : CutVideo = 1 : N
+```
 
 ---
 
@@ -30,7 +36,9 @@ text Generation : Scene = 1 : 1  Scene : Cut = 1 : N  Cut : CutImage = 1 : N  Cu
 
 ### 상태값
 
-text PENDING PROCESSING COMPLETED FAILED TIMEOUT
+```
+PENDING | PROCESSING | COMPLETED | FAILED | TIMEOUT
+```
 
 ### 설계 의도
 
@@ -55,13 +63,17 @@ text PENDING PROCESSING COMPLETED FAILED TIMEOUT
 
 ### 관계
 
-text Generation 1 : 1 Scene
+```
+Generation 1 : 1 Scene
+```
 
 ### 설계 의도
 
 하나의 생성 요청은 하나의 Scene을 생성합니다.
 
 Scene은 여러 개의 Cut을 생성하기 위한 스토리보드 역할을 수행합니다.
+
+OpenAI 응답에는 `style` 필드가 포함되어 있으나 Scene에 저장하지 않습니다. 대신 각 Cut의 `imagePrompt`와 `videoPrompt` 앞에 `style + ", "` 형태로 prepend하여 저장합니다.
 
 ---
 
@@ -82,7 +94,9 @@ Scene을 구성하는 세부 장면 정보를 저장합니다.
 
 ### 관계
 
-text Scene 1 : N Cut
+```
+Scene 1 : N Cut
+```
 
 ### 설계 의도
 
@@ -109,7 +123,9 @@ Cut 기반으로 생성된 이미지 정보를 저장합니다.
 
 ### 관계
 
-text Cut 1 : N CutImage
+```
+Cut 1 : N CutImage
+```
 
 ### 설계 의도
 
@@ -127,7 +143,7 @@ Cut 및 CutImage를 기반으로 생성된 비디오 정보를 저장합니다.
 |---------|---------|
 | cutVideoId | 컷 비디오 ID |
 | cutId | 컷 ID |
-| cutImageId | 생성에 사용된 컷 이미지 ID |
+| cutImageId | 생성에 사용된 컷 이미지 ID (nullable — 이미지 없이 실패 처리된 경우 null) |
 | status | 비디오 생성 상태 |
 | videoUrl | 생성 비디오 URL |
 | errorMessage | 비디오 생성 실패 메시지 |
@@ -135,7 +151,10 @@ Cut 및 CutImage를 기반으로 생성된 비디오 정보를 저장합니다.
 
 ### 관계
 
-text Cut 1 : N CutVideo  CutImage 1 : N CutVideo
+```
+Cut      1 : N CutVideo
+CutImage 1 : N CutVideo
+```
 
 ### 설계 의도
 
