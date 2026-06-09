@@ -34,7 +34,7 @@ Content-Type: application/json
 | key | type | 설명 |
 | --- | --- | --- |
 | generationId | Long | 생성 작업 ID |
-| status | String | 생성 상태 |
+| status | String | 생성 상태 (`PENDING` \| `PROCESSING` \| `COMPLETED` \| `FAILED` \| `TIMEOUT`) |
 | createdAt | String | 생성 시각 |
 
 ### Response Example
@@ -65,7 +65,90 @@ Content-Type: application/json
 
 ---
 
-# 2. 생성 상태 조회
+# 2. 생성 기록 조회
+
+## 기본 정보
+
+| 항목 | 내용 |
+| --- | --- |
+| 카테고리 | Generation |
+| Method | GET |
+| URL | /api/generations |
+| 설명 | 애니메이션 생성 기록 목록 조회 |
+
+## Request
+
+### Query Parameter
+
+| key | type | required | default | description |
+| --- | --- | --- | --- | --- |
+| status | String | N | ALL | 조회할 생성 상태 필터 (`ALL` \| `PENDING` \| `PROCESSING` \| `COMPLETED` \| `FAILED` \| `TIMEOUT`) |
+| page | Integer | N | 0 | 페이지 번호 (0부터 시작) |
+| size | Integer | N | 6 | 페이지 크기 |
+| sort | String | N | latest | 정렬 기준 (`latest` \| `oldest`) |
+
+### Request Example
+
+```http
+GET /api/generations?status=COMPLETED&page=0&size=6&sort=latest
+```
+
+## Response
+
+| key | type | 설명 |
+| --- | --- | --- |
+| content | List\<GenerationHistoryResponse\> | 생성 기록 목록 |
+| page | Integer | 현재 페이지 번호 |
+| size | Integer | 페이지 크기 |
+| totalElements | Long | 전체 항목 수 |
+| totalPages | Integer | 전체 페이지 수 |
+| hasNext | Boolean | 다음 페이지 존재 여부 |
+| hasPrevious | Boolean | 이전 페이지 존재 여부 |
+
+### GenerationHistoryResponse
+
+| key | type | 설명 |
+| --- | --- | --- |
+| generationId | Long | 생성 작업 ID |
+| title | String | 장면 제목 |
+| thumbnailUrl | String | 썸네일 이미지 URL |
+| status | String | 생성 상태 |
+| durationSec | Integer | 전체 영상 길이 (초) |
+| createdAt | String | 생성 요청 시각 |
+| errorMessage | String | 실패 메시지 |
+
+### Response Example
+
+```json
+{
+  "success": true,
+  "message": "생성 기록 조회 성공",
+  "errorCode": null,
+  "data": {
+    "content": [
+      {
+        "generationId": 1,
+        "title": "꿀을 찾아 떠난 곰",
+        "thumbnailUrl": "https://example.com/cut1.png",
+        "status": "COMPLETED",
+        "durationSec": 15,
+        "createdAt": "2026-06-04T15:00:00",
+        "errorMessage": null
+      }
+    ],
+    "page": 0,
+    "size": 6,
+    "totalElements": 1,
+    "totalPages": 1,
+    "hasNext": false,
+    "hasPrevious": false
+  }
+}
+```
+
+---
+
+# 3. 생성 상태 조회
 
 ## 기본 정보
 
@@ -95,13 +178,33 @@ GET /api/generations/1
 | key | type | 설명 |
 | --- | --- | --- |
 | generationId | Long | 생성 작업 ID |
-| status | String | 생성 상태 |
+| status | String | 생성 상태 (`PENDING` \| `PROCESSING` \| `COMPLETED` \| `FAILED` \| `TIMEOUT`) |
 | progress | Integer | 생성 진행률 |
 | currentStep | String | 현재 진행 단계 |
 | currentStepMessage | String | 화면에 표시할 현재 진행 메시지 |
 | completedStepCount | Integer | 완료된 단계 수 |
 | totalStepCount | Integer | 전체 단계 수 |
 | errorMessage | String | 실패 메시지 |
+| cuts | List\<CutStatusResponse\> | 컷별 진행 상태 목록 |
+
+### CutStatusResponse
+
+| key | type | 설명 |
+| --- | --- | --- |
+| cutOrder | Integer | 컷 순서 |
+| imageStatus | String | 이미지 생성 상태 (`PENDING` \| `PROCESSING` \| `COMPLETED` \| `FAILED` \| `TIMEOUT`) |
+| videoStatus | String | 영상 생성 상태 (`PENDING` \| `PROCESSING` \| `COMPLETED` \| `FAILED` \| `TIMEOUT`) |
+
+### currentStep
+
+| currentStep | 화면 표시 |
+| --- | --- |
+| SCENE_GENERATION | Scene 생성 중 |
+| CUT_IMAGE_GENERATION | Cut Image 생성 중 |
+| CUT_VIDEO_GENERATION | Cut Video 생성 중 |
+| VIDEO_MERGE | 최종 영상 병합 중 |
+| COMPLETED | 완료 |
+| FAILED | 실패 |
 
 ### Response Example
 
@@ -118,21 +221,22 @@ GET /api/generations/1
     "currentStepMessage": "컷 3 비디오 생성 중...",     
     "completedStepCount": 7,     
     "totalStepCount": 14,     
-    "errorMessage": null
+    "errorMessage": null,
+    "cuts": [
+      {
+        "cutOrder": 1,
+        "imageStatus": "COMPLETED",
+        "videoStatus": "COMPLETED"
+      },
+      {
+        "cutOrder": 2,
+        "imageStatus": "COMPLETED",
+        "videoStatus": "PROCESSING"
+      }
+    ]
   }
 }
 ```
-
-### currentStep
-
-| currentStep | 화면 표시 |
-| --- | --- |
-| SCENE_GENERATION | Scene 생성 중 |
-| CUT_IMAGE_GENERATION | Cut Image 생성 중 |
-| CUT_VIDEO_GENERATION | Cut Video 생성 중 |
-| VIDEO_MERGE | 최종 영상 병합 중 |
-| COMPLETED | 완료 |
-| FAILED | 실패 |
 
 ## 비즈니스 로직
 
@@ -145,7 +249,7 @@ GET /api/generations/1
 
 ---
 
-# 3. 생성 결과 조회
+# 4. 생성 결과 조회
 
 ## 기본 정보
 
@@ -177,7 +281,7 @@ GET /api/generations/1/result
 | generationId | Long | 생성 작업 ID |
 | resultUrl | String | 최종 병합 영상 URL |
 | scene | SceneResponse | 생성된 장면 정보 |
-| cuts | List<CutResponse> | 컷별 생성 결과 |
+| cuts | List\<CutResponse\> | 컷별 생성 결과 |
 
 ### SceneResponse
 
@@ -191,7 +295,7 @@ GET /api/generations/1/result
 | key | type | 설명 |
 | --- | --- | --- |
 | cutOrder | Integer | 컷 순서 |
-| durationSec | Integer | 컷 길이 |
+| durationSec | Integer | 컷 길이 (초) |
 | imagePrompt | String | 이미지 생성 프롬프트 |
 | imageUrl | String | 컷 이미지 URL |
 | videoPrompt | String | 비디오 생성 프롬프트 |
@@ -229,8 +333,46 @@ GET /api/generations/1/result
 
 1. generationId를 검증합니다.
 2. Generation을 조회합니다.
-3. Generation 상태가 COMPLETED인지 확인합니다.
+3. Generation 상태가 COMPLETED, FAILED, TIMEOUT인지 확인합니다.
 4. Scene 정보를 조회합니다.
 5. Cut 정보를 조회합니다.
 6. 최종 영상 URL을 반환합니다.
 7. 컷별 생성 결과를 반환합니다.
+
+---
+
+# 5. [테스트용] 영상 생성 재실행
+
+## 기본 정보
+
+| 항목 | 내용 |
+| --- | --- |
+| 카테고리 | Generation |
+| Method | POST |
+| URL | /api/generations/{generationId}/retry-videos |
+| 설명 | 기존 이미지로 영상 생성 + 병합 재실행 |
+
+## Request
+
+### Path Variable
+
+| key | type | required | description |
+| --- | --- | --- | --- |
+| generationId | Long | Y | 생성 작업 ID |
+
+### Request Example
+
+```http
+POST /api/generations/1/retry-videos
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "message": "요청 처리 성공",
+  "errorCode": null,
+  "data": null
+}
+```
