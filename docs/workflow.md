@@ -96,9 +96,13 @@ GPT-5.4 mini
 }
 ```
 
+## 재시도
+
+외부 API 호출 실패 시 최대 3회 재시도합니다. 재시도 간격은 지수 백오프(1초 → 2초)를 적용합니다.
+
 ## 처리 순서
 
-1. OpenAI에 프롬프트를 전달합니다.
+1. OpenAI에 프롬프트를 전달합니다. (실패 시 최대 3회 재시도)
 2. 응답의 `title`, `scenario`로 Scene을 저장합니다.
 3. 응답의 `style`을 각 Cut의 `imagePrompt`, `videoPrompt` 앞에 prepend합니다.
    - 예: `"children's animation style, ..., " + imagePrompt`
@@ -122,11 +126,15 @@ GPT-5.4 mini
 Nano Banana
 ```
 
+## 재시도
+
+외부 API 호출 실패 시 최대 3회 재시도합니다. 재시도 간격은 지수 백오프(1초 → 2초)를 적용합니다. 3회 모두 실패하면 해당 CutImage를 FAILED 처리합니다.
+
 ## 처리 순서
 
 1. Cut을 `cutOrder` 오름차순으로 순회합니다.
 2. 각 Cut에 대해 CutImage를 PROCESSING 상태로 저장합니다.
-3. Cut의 `imagePrompt`로 이미지 생성을 요청합니다.
+3. Cut의 `imagePrompt`로 이미지 생성을 요청합니다. (실패 시 최대 3회 재시도)
 4. 성공 시 CutImage를 COMPLETED 상태로 저장하고 imageUrl을 기록합니다.
 5. 실패 시 CutImage를 FAILED 상태로 저장하고 나머지 컷 처리를 계속합니다.
 
@@ -140,13 +148,17 @@ Nano Banana
 Kling-2.6
 ```
 
+## 재시도
+
+외부 API 호출 실패 시 최대 3회 재시도합니다. 재시도 간격은 지수 백오프(1초 → 2초)를 적용합니다. 3회 모두 실패하면 해당 CutVideo를 FAILED 처리합니다.
+
 ## 처리 순서
 
 1. Cut을 `cutOrder` 오름차순으로 순회합니다.
 2. 각 Cut에서 가장 최근 COMPLETED CutImage를 조회합니다.
 3. COMPLETED CutImage가 없으면 FAILED CutVideo를 저장하고 다음 컷으로 넘어갑니다.
 4. COMPLETED CutImage가 있으면 CutVideo를 PROCESSING 상태로 저장합니다.
-5. Cut의 `videoPrompt`, CutImage의 `imageUrl`, Cut의 `durationSec`으로 영상 생성을 요청합니다.
+5. Cut의 `videoPrompt`, CutImage의 `imageUrl`, Cut의 `durationSec`으로 영상 생성을 요청합니다. (실패 시 최대 3회 재시도)
 6. 성공 시 CutVideo를 COMPLETED 상태로 저장하고 videoUrl을 기록합니다.
 7. 실패 시 CutVideo를 FAILED 상태로 저장하고 나머지 컷 처리를 계속합니다.
 
