@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+
+openai:
+  api-key: fake
+  model: fake
+
+kie:
+  api-key: fake
+  model: fake
+  video-model: fake
+
+storage:
+  upload-dir: /tmp/test-uploads
+
+app:
+  base-url: http://localhost
+  mock-mode: false
+
+rate-limit:
+  max-active-generations: 3
