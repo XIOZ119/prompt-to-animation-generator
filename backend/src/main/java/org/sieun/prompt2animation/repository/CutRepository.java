@@ -16,4 +16,7 @@ public interface CutRepository extends JpaRepository<Cut, Long> {
 
     @Query("SELECT COALESCE(SUM(c.durationSec), 0) FROM Cut c WHERE c.scene.generation.id = :generationId")
     Integer sumDurationSecByGenerationId(@Param("generationId") Long generationId);
+
+    @Query("SELECT c.scene.generation.id, COALESCE(SUM(c.durationSec), 0) FROM Cut c WHERE c.scene.generation.id IN :generationIds GROUP BY c.scene.generation.id")
+    List<Object[]> sumDurationSecByGenerationIds(@Param("generationIds") List<Long> generationIds);
 }

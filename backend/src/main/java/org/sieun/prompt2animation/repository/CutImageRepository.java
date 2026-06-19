@@ -24,4 +24,13 @@ public interface CutImageRepository extends JpaRepository<CutImage, Long> {
 
     @Query("SELECT ci.imageUrl FROM CutImage ci WHERE ci.cut.scene.generation.id = :generationId AND ci.status = org.sieun.prompt2animation.domain.GenerationStatus.COMPLETED ORDER BY ci.cut.cutOrder ASC, ci.id DESC")
     List<String> findThumbnailsByGenerationId(@Param("generationId") Long generationId, Pageable pageable);
+
+    @Query("SELECT ci.cut.scene.generation.id, ci.imageUrl FROM CutImage ci WHERE ci.cut.scene.generation.id IN :generationIds AND ci.status = org.sieun.prompt2animation.domain.GenerationStatus.COMPLETED ORDER BY ci.cut.cutOrder ASC, ci.id DESC")
+    List<Object[]> findThumbnailsByGenerationIds(@Param("generationIds") List<Long> generationIds);
+
+    @Query("SELECT ci FROM CutImage ci WHERE ci.cut IN :cuts ORDER BY ci.id DESC")
+    List<CutImage> findByCutIn(@Param("cuts") List<Cut> cuts);
+
+    @Query("SELECT ci FROM CutImage ci WHERE ci.cut IN :cuts AND ci.status = :status ORDER BY ci.id DESC")
+    List<CutImage> findByCutInAndStatus(@Param("cuts") List<Cut> cuts, @Param("status") GenerationStatus status);
 }

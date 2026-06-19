@@ -2,6 +2,8 @@ package org.sieun.prompt2animation.service;
 
 import lombok.RequiredArgsConstructor;
 import org.sieun.prompt2animation.domain.Cut;
+import org.sieun.prompt2animation.domain.CutImage;
+import org.sieun.prompt2animation.domain.CutVideo;
 import org.sieun.prompt2animation.domain.Generation;
 import org.sieun.prompt2animation.domain.GenerationStatus;
 import org.sieun.prompt2animation.domain.GenerationStep;
@@ -30,8 +32,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -67,9 +73,7 @@ public class GenerationService {
                     ? generationRepository.findAll(pageable)
                     : generationRepository.findByStatus(GenerationStatus.valueOf(status), pageable);
 
-            List<GenerationHistoryResponse> content = generationPage.getContent().stream()
-                    .map(this::toHistoryResponse)
-                    .toList();
+            List<GenerationHistoryResponse> content = toHistoryResponses(generationPage.getContent());
 
             return GenerationHistoryPageResponse.of(generationPage, content);
         } catch (CustomException e) {
@@ -79,20 +83,34 @@ public class GenerationService {
         }
     }
 
-    private GenerationHistoryResponse toHistoryResponse(Generation generation) {
-        String title = sceneRepository.findByGenerationId(generation.getId())
-                .map(scene -> scene.getTitle())
-                .orElse(null);
+    private List<GenerationHistoryResponse> toHistoryResponses(List<Generation> generations) {
+        List<Long> generationIds = generations.stream().map(Generation::getId).toList();
 
-        Integer durationSec = title != null
-                ? cutRepository.sumDurationSecByGenerationId(generation.getId())
-                : null;
+        Map<Long, String> titleByGenerationId = sceneRepository.findByGenerationIdIn(generationIds)
+                .stream().collect(Collectors.toMap(
+                        s -> s.getGeneration().getId(),
+                        Scene::getTitle
+                ));
 
-        String thumbnailUrl = cutImageRepository
-                .findThumbnailsByGenerationId(generation.getId(), PageRequest.of(0, 1))
-                .stream().findFirst().orElse(null);
+        Map<Long, Integer> durationByGenerationId = cutRepository.sumDurationSecByGenerationIds(generationIds)
+                .stream().collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> ((Number) row[1]).intValue()
+                ));
 
-        return GenerationHistoryResponse.of(generation, title, thumbnailUrl, durationSec);
+        Map<Long, String> thumbnailByGenerationId = new HashMap<>();
+        for (Object[] row : cutImageRepository.findThumbnailsByGenerationIds(generationIds)) {
+            thumbnailByGenerationId.putIfAbsent((Long) row[0], (String) row[1]);
+        }
+
+        return generations.stream()
+                .map(generation -> {
+                    String title = titleByGenerationId.get(generation.getId());
+                    Integer duration = title != null ? durationByGenerationId.get(generation.getId()) : null;
+                    String thumbnail = thumbnailByGenerationId.get(generation.getId());
+                    return GenerationHistoryResponse.of(generation, title, thumbnail, duration);
+                })
+                .toList();
     }
 
     @Transactional
@@ -145,11 +163,20 @@ public class GenerationService {
             int total = (int) (1 + totalCuts + totalCuts + 1);
             int completed = (int) (1 + completedImages + completedVideos + (generation.getResultUrl() != null ? 1 : 0));
 
+            Map<Long, CutImage> latestImageByCutId = cutImageRepository.findByCutIn(cuts)
+                    .stream().collect(Collectors.toMap(
+                            ci -> ci.getCut().getId(), ci -> ci, (a, b) -> a
+                    ));
+            Map<Long, CutVideo> latestVideoByCutId = cutVideoRepository.findByCutIn(cuts)
+                    .stream().collect(Collectors.toMap(
+                            cv -> cv.getCut().getId(), cv -> cv, (a, b) -> a
+                    ));
+
             List<CutStatusResponse> cutStatuses = cuts.stream()
                     .map(cut -> new CutStatusResponse(
                             cut.getCutOrder(),
-                            cutImageRepository.findFirstByCutOrderByIdDesc(cut).map(img -> img.getStatus()).orElse(null),
-                            cutVideoRepository.findFirstByCutOrderByIdDesc(cut).map(vid -> vid.getStatus()).orElse(null)
+                            Optional.ofNullable(latestImageByCutId.get(cut.getId())).map(CutImage::getStatus).orElse(null),
+                            Optional.ofNullable(latestVideoByCutId.get(cut.getId())).map(CutVideo::getStatus).orElse(null)
                     ))
                     .toList();
 
@@ -209,16 +236,23 @@ public class GenerationService {
 
             List<Cut> cuts = cutRepository.findBySceneOrderByCutOrderAsc(scene);
 
+            Map<Long, CutImage> completedImageByCutId = cutImageRepository
+                    .findByCutInAndStatus(cuts, GenerationStatus.COMPLETED)
+                    .stream().collect(Collectors.toMap(
+                            ci -> ci.getCut().getId(), ci -> ci, (a, b) -> a
+                    ));
+            Map<Long, CutVideo> completedVideoByCutId = cutVideoRepository
+                    .findByCutInAndStatus(cuts, GenerationStatus.COMPLETED)
+                    .stream().collect(Collectors.toMap(
+                            cv -> cv.getCut().getId(), cv -> cv, (a, b) -> a
+                    ));
+
             List<CutResponse> cutResponses = cuts.stream()
                     .map(cut -> {
-                        String imageUrl = cutImageRepository
-                                .findFirstByCutAndStatusOrderByIdDesc(cut, GenerationStatus.COMPLETED)
-                                .map(img -> img.getImageUrl())
-                                .orElse(null);
-                        String videoUrl = cutVideoRepository
-                                .findFirstByCutAndStatusOrderByIdDesc(cut, GenerationStatus.COMPLETED)
-                                .map(vid -> vid.getVideoUrl())
-                                .orElse(null);
+                        String imageUrl = Optional.ofNullable(completedImageByCutId.get(cut.getId()))
+                                .map(CutImage::getImageUrl).orElse(null);
+                        String videoUrl = Optional.ofNullable(completedVideoByCutId.get(cut.getId()))
+                                .map(CutVideo::getVideoUrl).orElse(null);
                         return CutResponse.of(cut, imageUrl, videoUrl);
                     })
                     .toList();
